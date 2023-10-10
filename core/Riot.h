@@ -35,12 +35,14 @@ extern "C" {
 
 extern void riot_Reset(void);
 extern void riot_SetInput(const uint8_t* input);
-extern void riot_SetDRA(uint8_t data);
-extern void riot_SetDRB(uint8_t data);
 extern void riot_SetTimer(uint16_t timer, uint8_t intervals);
-extern void riot_UpdateTimer(uint8_t cycles);
+extern void riot_Run(uint32_t cycles);
 
-extern bool riot_timing;
+extern uint8_t riot_Read(uint16_t address);
+extern void riot_Write(uint16_t address, uint8_t data);
+
+extern void riot_LoadState(void);
+extern void riot_SaveState(void);
 
 #ifdef __cplusplus
 }

@@ -37,8 +37,8 @@
  ******************************************************************************/
 int32_t iCoreReady;
 
-volatile int32_t iAmPaused;
-volatile int32_t iAllStopReq;
+int32_t iAmPaused;
+int32_t iAllStopReq;
 
 
 struct {
@@ -48,8 +48,8 @@ struct {
 	int8_t cVol_Left,cVol_Right;
 } aDispatchQueue[CORETONE_DISPATCH_DEPTH],
   aBatchQueue[CORETONE_DISPATCH_DEPTH];
-volatile uint32_t uiDispatchIn,uiDispatchOut;
-volatile uint32_t uiBatchIn,uiBatchOut;
+uint32_t uiDispatchIn,uiDispatchOut;
+uint32_t uiBatchIn,uiBatchOut;
 
 
 typedef enum CoreReq_e
@@ -65,21 +65,32 @@ struct {
 	CoreReq_t eAction;
 	uint32_t uiArg_A,uiArgB,uiArg_C;
 } aReqQueue[CORETONE_REQUEST_DEPTH];
-volatile uint32_t uiReqIn,uiReqOut;
+uint32_t uiReqIn,uiReqOut;
 
 
-volatile uint8_t *pMusTrack;
-volatile int8_t cMusVol;
+uint8_t *pMusTrack;
+int8_t cMusVol;
 
-volatile int32_t iMusPlaying,iMusMood;
-volatile int32_t iMusPlayReq,iMusStopReq,iMusAttenReq;
+int32_t iMusPlaying,iMusMood;
+int32_t iMusPlayReq,iMusStopReq,iMusAttenReq;
 
-volatile ct_renderCall_t pRenderCall;
+ct_renderCall_t pRenderCall;
 
 CoreChannel_t aCoreChannels[CORETONE_CHANNELS];
 CorePatch_t aCorePatches[CORETONE_CHANNELS];
 CoreTrack_t aCoreTracks[CORETONE_CHANNELS];
 
+
+int32_t CORETONE_RENDER_RATE = 48000;
+int32_t CORETONE_BUFFER_SAMPLES = 200;
+int32_t CORETONE_BUFFER_LEN = 400;
+
+void ct_setrate(int32_t rate)
+{
+   CORETONE_RENDER_RATE = rate;
+   CORETONE_BUFFER_SAMPLES = (CORETONE_RENDER_RATE / CORETONE_DECODE_RATE);
+   CORETONE_BUFFER_LEN = (CORETONE_BUFFER_SAMPLES * 2);
+}
 
 /******************************************************************************
  * !!!!----            UPDATE TICK AND WAVEFORM RENDERING            ----!!!!

@@ -42,33 +42,28 @@
 #ifndef TIA_H
 #define TIA_H
 
-#define TIA_BUFFER_SIZE 624
-
-#include <stdint.h>
-#include "Equates.h"
+#include "Mixer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern void tia_SetRate(void);
+extern void tia_SetLowpass(int limit);
 extern void tia_Reset(void);
-extern void tia_SetRegister(uint16_t address, uint8_t data);
-extern void tia_Clear(void);
+extern void tia_Frame(void);
 
-extern void tia_Process(uint32_t length);
-extern uint8_t tia_buffer[TIA_BUFFER_SIZE];
-extern uint32_t tia_size;
+extern uint8_t tia_Read(uint16_t address);
+extern void tia_Write(uint16_t address, uint8_t data);
 
-extern uint8_t tia_volume[2];
-extern uint8_t tia_counterMax[2];
-extern uint8_t tia_counter[2];
-extern uint8_t tia_audc[2];
-extern uint8_t tia_audf[2];
-extern uint8_t tia_audv[2];
-extern uint32_t tia_poly4Cntr[2];
-extern uint32_t tia_poly5Cntr[2];
-extern uint32_t tia_poly9Cntr[2];
-extern uint32_t tia_soundCntr;
+extern void tia_Run(void);
+extern void tia_ScanlineEnd(void);
+
+extern void tia_LoadState(void);
+extern void tia_SaveState(void);
+
+extern int16_t tia_buffer[MAX_SOUND_SAMPLES];
+extern int tia_outCount;
 
 #ifdef __cplusplus
 }

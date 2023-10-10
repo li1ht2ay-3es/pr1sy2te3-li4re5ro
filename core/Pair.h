@@ -35,6 +35,7 @@ extern "C" {
 union Pair 
 {
    uint16_t w;
+
    struct Join
    {
 #ifdef MSB_FIRST

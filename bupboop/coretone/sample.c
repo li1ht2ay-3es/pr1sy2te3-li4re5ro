@@ -130,7 +130,7 @@ int32_t ct_sample_setup(uint8_t *pSamplePak)
 	 * word matches what we expect, the sample count is below our limit,
 	 * and it's living at a 32-Bit aligned address.
 	 */
-	uint32_t uiY = (uint32_t)*pSamplePak;
+	uint32_t uiY = (uint32_t)pSamplePak;
 	if(0 != (uiY % sizeof(uint32_t)))
 		return -1;
 

@@ -23,12 +23,16 @@
  * BupChip.c
  * ----------------------------------------------------------------------------
  */
-#include "BupChip.h"
-#include "Cartridge.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "libretro.h"
+#include "BupChip.h"
+#include "ProSystem.h"
+#include "Cartridge.h"
+#include "Maria.h"
+#include "ProSystem.h"
+#include "../bupboop/coretone/coretone.h"
 
 #define BUPCHIP_FLAGS_PLAYING   1
 #define BUPCHIP_FLAGS_PAUSED   2
@@ -50,7 +54,17 @@ uint8_t bupchip_flags;
 uint8_t bupchip_volume;
 uint8_t bupchip_current_song;
 
-short bupchip_buffer[CORETONE_BUFFER_LEN * 4];
+int bupchip_attenuation = 1;
+
+static int out_rate;
+static int out_tick;
+static int out_tick2;
+static int out_clock;
+static int out_clock2;
+
+int16_t bupchip_buffer[MAX_SOUND_SAMPLES];
+int bupchip_outCount;
+
 
 static void bupchip_ReplaceChar(char *string, char character, char replacement)
 {
@@ -99,6 +113,7 @@ int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDi
    for(songIndex = 0; songIndex < fileDataCount - 2; songIndex++)
       bupchip_songs[songIndex] = fileData[songIndex + 2];
    bupchip_song_count = (uint8_t)(fileDataCount - 2);
+
    return 1;
 
 err:
@@ -146,11 +161,13 @@ void bupchip_Resume(void)
 void bupchip_SetVolume(uint8_t volume)
 {
    int attenuation;
-   bupchip_volume = volume & 0x1f;
+
    /* This matches BupSystem. */
    attenuation = volume << 2;
    if((volume & 1) != 0)
       attenuation += 0x3;
+
+   bupchip_volume = attenuation;
    ct_attenMusic(attenuation);
 }
 
@@ -158,37 +175,43 @@ void bupchip_ProcessAudioCommand(unsigned char data)
 {
    switch(data & 0xc0)
    {
-   case 0:
+   case 0x00:
       switch(data)
       {
       case 0:
          bupchip_flags  = 0;
-         bupchip_volume = 0x1f;
+         bupchip_volume = 0x7f;
          ct_stopAll();
          ct_resume();
          ct_attenMusic(127);
-	 break;
+         break;
+
       case 2:
          bupchip_Resume();
-	 break;
+         break;
+
       case 3:
          bupchip_Pause();
-	 break;
+         break;
       }
       break;
+
    case 0x40:
       bupchip_Stop();
       break;
+
    case 0x80:
       bupchip_Play(data & 0x1f);
+      bupchip_Resume();
       break;
+
    case 0xc0:
       bupchip_SetVolume(data);
       break;
    }
 }
 
-void bupchip_Process(unsigned tick)
+void bupchip_Tick(unsigned tick)
 {
    ct_update(&bupchip_buffer[tick * CORETONE_BUFFER_LEN]);
 }
@@ -201,21 +224,101 @@ void bupchip_Release(void)
       free(bupchip_songs[i].data);
       bupchip_songs[i].data = NULL;
    }
+
    free(bupchip_instrument_data);
    bupchip_instrument_data = NULL;
+
    free(bupchip_sample_data);
    bupchip_sample_data     = NULL;
 }
 
-void bupchip_StateLoaded(void)
+void bupchip_ScanlineEnd()
 {
-   ct_stopAll();
-   if((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+   out_clock--;
+   if (out_clock > 0)  /* 240 Hz ~ 1/4 frame */
       return;
-   ct_playMusic(bupchip_songs[bupchip_current_song].data);
-   if((bupchip_flags & BUPCHIP_FLAGS_PAUSED) != 0)
-      ct_pause();
+
+
+   bupchip_Tick(bupchip_outCount);
+   bupchip_outCount++;
+
+
+   out_clock = out_tick;
+   if (out_tick2 > 0)
+   {
+      out_clock2 -= out_tick2;
+      if (out_clock2 <= 0)
+      {
+         out_clock2 += out_rate;
+         out_clock++;
+         return;
+      }
+   }
+}
+
+void bupchip_Output()
+{
+   /* stream decoder */
+
+   /* note: seems to play at 1/2 unscaled volume (7f max) */
+}
+
+void bupchip_Frame(void)
+{
+   bupchip_outCount = 0;
+}
+
+void bupchip_SetRate()
+{
+   int clock = prosystem_scanlines * prosystem_frequency;
+
+   out_rate = CORETONE_DECODE_RATE;  /* 240 Hz = default */
+
+   out_tick  = clock / out_rate;
+   out_tick2 = clock % out_rate;
+
+
+   ct_setrate(mixer_rate);
+}
+
+void bupchip_Reset(void)
+{
+   out_clock = out_tick;
+   out_clock2 = out_rate;
+
+   memset(&bupchip_buffer, 0, sizeof(bupchip_buffer));
+}
+
+void bupchip_LoadState(void)
+{
+   uint8_t new_song;
+   uint8_t new_volume;
+   uint8_t new_flags;
+
+   new_song = prosystem_ReadState8();
+   new_volume = prosystem_ReadState8();
+   new_flags = prosystem_ReadState8();
+
+
+   if (new_song != bupchip_current_song)
+      bupchip_Play(new_song);
+
+   bupchip_volume = new_volume;
+   ct_attenMusic(bupchip_volume);
+
+   if ((new_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+   {
+      bupchip_Pause();
+      bupchip_Stop();
+   }
+
    else
-      ct_resume();
-   bupchip_SetVolume(bupchip_volume);
+      (new_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
+}
+
+void bupchip_SaveState(void)
+{
+   prosystem_WriteState8(bupchip_current_song);
+   prosystem_WriteState8(bupchip_volume);
+   prosystem_WriteState8(bupchip_flags);
 }

@@ -43,9 +43,14 @@ struct Rects
    uint32_t bottom;
 };
 
-static INLINE uint32_t Rect_GetLength(struct Rects *rect)
+static uint32_t Rect_GetLength(struct Rects *rect)
 {
    return (rect->right - rect->left) + 1;
+}
+
+static uint32_t Rect_GetHeight(struct Rects *rect)
+{
+   return (rect->bottom - rect->top) + 1;
 }
 
 typedef struct Rects rect;

@@ -27,19 +27,17 @@
 
 #include <streams/file_stream.h>
 #include "Bios.h"
-#include "Memory.h"
+#include "Mapper.h"
+
 
 /* Forward declaration */
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
+extern int64_t rfread(void* buffer, size_t elem_size, size_t elem_count, RFILE* stream);
 
-
-#define BIOS_SOURCE "Bios.cpp"
 
 bool bios_enabled = false;
 
 static uint8_t* bios_data = NULL;
-uint16_t bios_size = 0;
+uint32_t bios_size = 0;
 
 bool bios_Load(const char *filename)
 {
@@ -69,21 +67,25 @@ bool bios_Load(const char *filename)
    return true; 
 }
 
-bool bios_IsLoaded(void)
+bool bios_IsMapped(void)
 {
-  return (bios_data != NULL)? true: false;
+   return (sally_readmap[0xf000 / 0x40] == bios_data) ? true: false;
 }
 
 void bios_Release(void)
 {
    if (bios_data)
       free(bios_data);
+
    bios_data = NULL;
    bios_size = 0;
 }
 
-void bios_Store(void)
+void bios_Map(void)
 {
-   if(bios_data != NULL && bios_enabled)
-      memory_WriteROM(65536 - bios_size, bios_size, bios_data);
+   if (bios_data != NULL && bios_enabled)
+   {
+      sally_SetRead(0x10000 - bios_size, 0x10000, bios_data);
+      maria_SetRead(0x10000 - bios_size, 0x10000, bios_data);
+   }
 }

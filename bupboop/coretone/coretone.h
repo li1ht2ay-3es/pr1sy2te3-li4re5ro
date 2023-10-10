@@ -7,6 +7,11 @@
  ******************************************************************************/
 #ifndef CORETONE
 #define CORETONE
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************
  * Operating Parameters
  ******************************************************************************/
@@ -39,7 +44,7 @@
 	#define CORETONE_REQUEST_DEPTH		32
 #endif
 
-#if defined(_WIN32) && !defined(__LIBRETRO__)
+#if defined(_WIN32) && !defined(__LIBRETRO__) && 0
 	#ifdef CORETONE_EXPORTS
 		#define CORETONE_API __declspec(dllexport)
 	#else
@@ -58,12 +63,11 @@
  * For proper operation ensure CORETONE_RENDER_RATE is evenly divisible
  * by CORETONE_DECODE_RATE.
  */
-#ifndef CORETONE_RENDER_RATE
-	#define CORETONE_RENDER_RATE		48000
-#endif
+extern int32_t CORETONE_RENDER_RATE;
+extern void ct_setrate(int32_t rate);
 
 #ifndef CORETONE_DECODE_RATE
-	#define CORETONE_DECODE_RATE		240
+   #define CORETONE_DECODE_RATE		240
 #endif
 
 
@@ -77,8 +81,8 @@
  * with, this will usually be zero for signed output but can be adjusted up
  * or down for unsigned platforms.
  */
-#define CORETONE_BUFFER_SAMPLES		(CORETONE_RENDER_RATE / CORETONE_DECODE_RATE)
-#define CORETONE_BUFFER_LEN			(CORETONE_BUFFER_SAMPLES * 2)
+extern int32_t CORETONE_BUFFER_SAMPLES;
+extern int32_t CORETONE_BUFFER_LEN;
 #define CORETONE_BUFFER_CENTER		0
 
 
@@ -129,4 +133,9 @@ CORETONE_API void ct_getState(void **ppaChannels, void **ppaPatches, void **ppaT
 CORETONE_API void ct_getInfo(uint32_t *puiChannels, uint32_t *puiRenderFreq,
                              uint32_t *puiDecodeRate,
                              uint32_t *puiSamples, uint32_t *puiSampleLen);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

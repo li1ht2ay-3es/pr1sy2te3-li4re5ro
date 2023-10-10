@@ -38,6 +38,8 @@ extern "C" {
 
 extern void region_Reset(void);
 
+extern uint8_t region_type;
+
 #ifdef __cplusplus
 }
 #endif

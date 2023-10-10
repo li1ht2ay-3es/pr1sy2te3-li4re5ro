@@ -26,8 +26,9 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEMORY_SIZE 65536
-#define MEMORY_SOUPER_EXRAM_SIZE 32768
+#define MEMORY_SIZE 0x10000
+#define MEMORY_EXRAM_SIZE 0x8000
+#define MEMORY_NVRAM_SIZE 0x1000
 
 #include <stdint.h>
 
@@ -36,14 +37,24 @@ extern "C" {
 #endif
 
 extern void memory_Reset(void);
+extern void memory_Map(void);
+
 extern uint8_t memory_Read(uint16_t address);
 extern void memory_Write(uint16_t address, uint8_t data);
-extern void memory_WriteROM(uint16_t address, uint16_t size, const uint8_t* data);
-extern void memory_ClearROM(uint16_t address, uint16_t size);
-extern uint16_t memory_souper_GetRamAddress(uint16_t address);
+
+uint8_t memory_ReadOpenBus(uint16_t address);
+extern void memory_WriteOpenBus(uint16_t address, uint8_t data);
+
+extern void memory_SaveState(void);
+extern void memory_LoadState(void);
+
 extern uint8_t memory_ram[MEMORY_SIZE];
-extern uint8_t memory_rom[MEMORY_SIZE];
-extern uint8_t memory_souper_ram[MEMORY_SOUPER_EXRAM_SIZE];
+
+extern uint8_t memory_exram[MEMORY_EXRAM_SIZE];
+extern uint32_t memory_exram_size;
+
+extern uint8_t memory_nvram[MEMORY_NVRAM_SIZE];
+extern uint32_t memory_nvram_size;
 
 #ifdef __cplusplus
 }

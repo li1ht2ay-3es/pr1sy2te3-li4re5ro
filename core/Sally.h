@@ -34,17 +34,20 @@ extern "C" {
 #endif
 
 extern void sally_Reset(void);
-extern uint32_t sally_ExecuteInstruction(void);
-extern uint32_t sally_ExecuteRES(void);
-extern uint32_t sally_ExecuteNMI(void);
-extern uint32_t sally_ExecuteIRQ(void);
+extern void sally_SetNMI(void);
+extern void sally_SetIRQ(void);
 
-extern uint8_t sally_a;
-extern uint8_t sally_x;
-extern uint8_t sally_y;
-extern uint8_t sally_p;
-extern uint8_t sally_s;
-extern pair sally_pc;
+extern int sally_Run(void);
+extern int sally_SlowCycles(void);
+
+extern void sally_SetRead(uint32_t start, uint32_t stop, uint8_t *prg);
+extern void sally_SetWrite(uint32_t start, uint32_t stop, uint8_t *prg);
+
+extern void sally_LoadState(void);
+extern void sally_SaveState(void);
+
+extern uint8_t* sally_readmap[0x400];
+extern uint8_t* sally_writemap[0x400];
 
 #ifdef __cplusplus
 }
