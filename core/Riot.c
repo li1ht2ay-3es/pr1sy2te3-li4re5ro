@@ -23,24 +23,37 @@
  * Riot.c
  * ----------------------------------------------------------------------------
  */
+
 #include "Riot.h"
 #include "Equates.h"
 #include "Memory.h"
 
-bool riot_timing              = false;
-static uint16_t riot_timer    = TIM64T;
-static uint8_t riot_intervals = 0;
+bool riot_active       = false;
+int16_t riot_timer     = TIM64T;
+uint8_t riot_intervals = 0;
 
-static uint8_t riot_dra       = 0;
-static uint8_t riot_drb       = 0;
-static bool riot_elapsed      = false;
-static int riot_currentTime   = 0;
-static uint16_t riot_clocks   = 0;
+uint8_t riot_dra       = 0;
+uint8_t riot_drb       = 0;
+int32_t riot_currentTime   = 0;
+uint16_t riot_clocks   = 0;
+
+static bool riot_elapsed   = false;
+static uint32_t riot_halfcycle = 0;
+
 
 void riot_Reset(void)
 {
-	riot_SetDRA(0);
-	riot_SetDRB(0);
+   riot_SetDRA(0);
+   riot_SetDRB(0);
+
+   riot_timer = TIM64T; 
+   riot_intervals = 0;
+   riot_clocks = 0;
+   riot_currentTime = 0;
+   riot_halfcycle = 0;
+
+   riot_elapsed = false;
+   riot_active = false;
 }
 
 /* ----------------------------------------------------------------------------
@@ -77,15 +90,20 @@ void riot_SetInput(const uint8_t* input)
      button signals are in high bits of INPT0-5.*/
 
    memory_ram[SWCHA] = ((~memory_ram[CTLSWA]) | riot_dra);	/*SWCHA as driven by RIOT*/
+
+
    /*now console switches will force bits to ground:*/
-   if (input[0x00])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x80;
-   if (input[0x01])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x40;
-   if (input[0x02])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x20;
-   if (input[0x03])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x10;
-   if (input[0x06])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x08;
-   if (input[0x07])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x04;
-   if (input[0x08])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x02;
-   if (input[0x09])	memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x01;
+   if (input[0x00]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x80;
+   if (input[0x01]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x40;
+   if (input[0x02]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x20;
+   if (input[0x03]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x10;
+
+	if (input[0x06]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x08;
+   if (input[0x07]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x04;
+   if (input[0x08]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x02;
+   if (input[0x09]) memory_ram[SWCHA] = memory_ram[SWCHA] &~ 0x01;
+
+
    /*Switches can always push the appropriate bit of SWCHA to ground, as in above code block.
      In addition, RIOT can be configured to drive ground even when switch is open.
      By doing this it's possible for real hardware to behave as if switches are permanently held (tested this).*/
@@ -110,6 +128,8 @@ void riot_SetInput(const uint8_t* input)
      Some games rely on this, and don't actually store anything to SWCHB.*/
 
    memory_ram[SWCHB] = ((~memory_ram[CTLSWB]) | riot_drb);	/*SWCHB as driven by RIOT*/
+
+
    /*now the console switches can force certain bits to ground:*/
    if (input[0x0c])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x01;
    if (input[0x0d])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x02;
@@ -117,60 +137,43 @@ void riot_SetInput(const uint8_t* input)
    if (input[0x0f])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x40;
    if (input[0x10])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x80;
 
+
    /*When in 1 button mode, only the legacy 2600 button signal is active.  The others stay off.
      When in 2 button mode, only the new signals are active.  2600 button stays off.	(tested)
 see:  http://www.atariage.com/forums/index.php?showtopic=127162
 also see 7800 schematic and RIOT datasheet  */
 
-   if(memory_ram[SWCHB] & 0x04)	 /* first player in 1 button mode */
+   if (memory_ram[SWCHB] & 0x04)	 /* first player in 1 button mode */
    {
-      memory_ram[INPT0] &= 0x7f; /* new style buttons are always off in this mode */
+      memory_ram[INPT0] &= 0x7f;     /* new style buttons are always off in this mode */
       memory_ram[INPT1] &= 0x7f;
 
-      if(input[0x04] || input[0x05]) /* in this mode, either button triggers only the legacy button signal */
-         memory_ram[INPT4] &= 0x7f;  /* this button signal activates by turning off the high bit */
-      else
-         memory_ram[INPT4] |= 0x80;
+      memory_ram[INPT4] = (input[0x04] || input[0x05]) ? (memory_ram[INPT4] & 0x7f) : (memory_ram[INPT4] | 0x80);   /* in this mode, either button triggers only the legacy button signal */
    }
+
    else /* first player in 2 button mode */
    {
       memory_ram[INPT4] |= 0x80; /* 2600 button is always off in this mode */
 
-      if(input[0x04]) /* left button (button 1) */
-         memory_ram[INPT1] |= 0x80; /* these buttons activate by turning on the high bit. */
-      else
-         memory_ram[INPT1] &= 0x7f;
-
-      if(input[0x05]) /* right button (button 2) */
-         memory_ram[INPT0] |= 0x80;
-      else
-         memory_ram[INPT0] &= 0x7f;
+      memory_ram[INPT1] = input[0x04] ? (memory_ram[INPT1] | 0x80) : (memory_ram[INPT1] & 0x7f);  /* left button (button 1) */
+      memory_ram[INPT0] = input[0x05] ? (memory_ram[INPT0] | 0x80) : (memory_ram[INPT0] & 0x7f);  /* right button (button 2) */
    }
 
+
    /*now repeat for 2nd player*/
-   if(memory_ram[SWCHB] & 0x10)
+   if (memory_ram[SWCHB] & 0x10)
    {
       memory_ram[INPT2] &= 0x7f;
       memory_ram[INPT3] &= 0x7f;
 
-      if(input[0x0a] || input[0x0b])
-         memory_ram[INPT5] &= 0x7f;
-      else
-         memory_ram[INPT5] |= 0x80;
+      memory_ram[INPT5] = (input[0x0a] || input[0x0b]) ? (memory_ram[INPT5] & 0x7f) : (memory_ram[INPT5] | 0x80);
    }
    else
    {
       memory_ram[INPT5] |= 0x80;
 
-      if(input[0x0a])
-         memory_ram[INPT3] |= 0x80;
-      else
-         memory_ram[INPT3] &= 0x7f;
-
-      if(input[0x0b])
-         memory_ram[INPT2] |= 0x80;
-      else
-         memory_ram[INPT2] &= 0x7f;
+      memory_ram[INPT3] = input[0x0a] ? (memory_ram[INPT3] | 0x80) : (memory_ram[INPT3] & 0x7f);
+      memory_ram[INPT2] = input[0x0b] ? (memory_ram[INPT2] | 0x80) : (memory_ram[INPT2] & 0x7f);
    }
 }
 
@@ -182,69 +185,81 @@ also see 7800 schematic and RIOT datasheet  */
 ***********************************************************************************/
 void riot_SetDRA(uint8_t data)
 {
-	riot_dra=data;
+   riot_dra = data;
 }
 
 void riot_SetDRB(uint8_t data)
 {
-	riot_drb=data;
+   riot_drb = data;
+
+   // Make changes to joystick buttons immediately. This was added to make 
+   // The high score cart work properly with Asteroids
+   memory_ram[SWCHB] &= ( ~0x14 );
+   memory_ram[SWCHB] |= (((~memory_ram[CTLSWB]) | riot_drb) & 0x14);
 }
 
 void riot_SetTimer(uint16_t timer, uint8_t intervals)
 {
+	const uint16_t clocks[4] = { 1, 8, 64, 1024 };
+
+   riot_clocks = clocks[timer & 3];
    riot_timer = timer;
    riot_intervals = intervals;
 
-   switch(timer)
-   {
-      case T1024T:
-         riot_clocks = 1024;
-         riot_timing = true;
-         break;
-      case TIM1T:
-         riot_clocks = 1;
-         riot_timing = true;
-         break;
-      case TIM8T:
-         riot_clocks = 8;
-         riot_timing = true;
-         break;
-      case TIM64T:
-         riot_clocks = 64;
-         riot_timing = true;
-         break;
-   }
+   riot_currentTime = (riot_clocks - 1) * intervals;  /* decrements 1 immediately */
 
-   if(riot_timing)
-   {
-      riot_currentTime = riot_clocks * intervals;
-      riot_elapsed = false;
-   }
+   riot_elapsed = false;
+   riot_active = true;
 }
 
-void riot_UpdateTimer(uint8_t cycles)
+static void riot_Process()
 {
-   riot_currentTime -= cycles;
-   if(!riot_elapsed && riot_currentTime > 0)
-      memory_Write(INTIM, riot_currentTime / riot_clocks);
-   else
+   if (!riot_active)  /* timer stopped */
+      return;
+
+
+   riot_currentTime--;
+
+   if (!riot_elapsed)
    {
-      if(riot_elapsed)
-      {
-         if(riot_currentTime >= -255)
-            memory_Write(INTIM, riot_currentTime);
-         else
-         {
-            memory_Write(INTIM, 0);
-            riot_timing = false;
-         }
-      }
+      if (riot_currentTime > 0)
+         memory_Write(INTIM, riot_currentTime / riot_clocks);
+
       else
       {
          riot_currentTime = riot_clocks;
+
          memory_Write(INTIM, 0);
-         memory_ram[INTFLG] |= 0x80;
+         memory_ram[INTFLG + 0x00] |= 0x80;
+         memory_ram[INTFLG + 0x10] |= 0x80;  /* mirror */
+
          riot_elapsed = true;
       }
    }
+
+   else  /* riot_elapsed */
+   {
+      if (riot_currentTime >= -255)
+         memory_Write(INTIM, riot_currentTime);
+
+      else
+      {
+         memory_Write(INTIM, 0);
+         riot_active = false;
+      }
+   }
+}
+
+void riot_Run(uint32_t cycles)
+{
+   cycles += riot_halfcycle;
+   riot_halfcycle = cycles % 4;   /* leftover clocks */
+
+
+   cycles /= 4;       /* Maria @ 1/4 */
+   while (cycles > 0)
+	{
+      riot_Process();
+      cycles--;
+	}
 }

@@ -26,7 +26,9 @@
 #ifndef MARIA_H
 #define MARIA_H
 
-#define MARIA_SURFACE_SIZE 93440
+#define MARIA_SURFACE_SIZE (320 * 293)
+#define CYCLES_PER_SCANLINE 454
+
 
 #include <stdint.h>
 #include "Rect.h"
@@ -36,13 +38,13 @@ extern "C" {
 #endif
 
 extern void maria_Reset(void);
-extern uint32_t maria_RenderScanline(void);
 extern void maria_Clear(void);
+extern int maria_Run(void);
 
 extern rect maria_displayArea;
 extern rect maria_visibleArea;
 extern uint8_t maria_surface[MARIA_SURFACE_SIZE];
-extern uint16_t maria_scanline;
+extern uint32_t maria_scanline;
 
 #ifdef __cplusplus
 }

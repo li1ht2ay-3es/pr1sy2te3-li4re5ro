@@ -40,71 +40,76 @@
  * ----------------------------------------------------------------------------
  */
 #include "Tia.h"
+#include "Maria.h"
+#include "ProSystem.h"
+#include "Mixer.h"
+
 #define TIA_POLY4_SIZE 15
 #define TIA_POLY5_SIZE 31
 #define TIA_POLY9_SIZE 511
-
-uint8_t tia_buffer[TIA_BUFFER_SIZE] = {0};
-uint32_t tia_size = 524;
 
 static const uint8_t TIA_POLY4[ ] = {1,1,0,1,1,1,0,0,0,0,1,0,1,0,0};
 static const uint8_t TIA_POLY5[ ] = {0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0,1,1,1,0,1,0,1,0,0,0,0,1};
 static const uint8_t TIA_POLY9[ ] = {0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,1,1,1,0,0,1,1,0,1,1,0,1,0,1,1,1,0,1,1,0,0,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,1,1,1,1,0,1,0,1,1,0,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,1,0,0,0,1,1,1,0,0,1,1,0,1,1,0,0,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,1,1,1,0,0,1,0,0,0,1,1,1,0,0,1,1,0,1,0,1,1,0,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,0,1,1,1,1,0,1,1,0,0,0,0,1,1,1,1,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,0,0,0,0,0,0,0,0,1,0,1,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1,1,1,1,0,0,0,1,1,1,0,0,0,1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,0,1,0,1,1,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,1,1,0,0,0,1,0,1,0,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1,0,0,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,1,1,0,1,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,1,0,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,1,1,0,1,1,1,0,0,0,1,0,1,0,0,1,0,1,0,1,0,1,1,1,0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0};
 static const uint8_t TIA_DIV31[ ] = {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0};
+
 uint8_t tia_volume[2] = {0};
 uint8_t tia_counterMax[2] = {0};
 uint8_t tia_counter[2] = {0};
 uint8_t tia_audc[2] = {0};
 uint8_t tia_audf[2] = {0};
 uint8_t tia_audv[2] = {0};
-uint32_t tia_poly4Cntr[2] = {0};
-uint32_t tia_poly5Cntr[2] = {0};
-uint32_t tia_poly9Cntr[2] = {0};
-uint32_t tia_soundCntr = 0;
+int tia_poly4Cntr[2] = {0};
+int tia_poly5Cntr[2] = {0};
+int tia_poly9Cntr[2] = {0};
+
+static int tia_count;
+static int tia_cycles;
+static int16_t tia_buffer[MAX_SOUND_SAMPLES];
+
 
 static void tia_ProcessChannel(uint8_t channel)
 {
-   tia_poly5Cntr[channel]++;
-   if(tia_poly5Cntr[channel] == TIA_POLY5_SIZE)
-      tia_poly5Cntr[channel] = 0;
+   tia_poly5Cntr[channel] = (tia_poly5Cntr[channel] + 1) % TIA_POLY5_SIZE;
 
-   if(
-         ((tia_audc[channel] & 2) == 0) 
-         || (((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_poly5Cntr[channel]]) 
-         || (((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_poly5Cntr[channel]])
+   if( ((tia_audc[channel] & 2) == 0) ||
+       ( ((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_poly5Cntr[channel]] ) ||
+       ( ((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_poly5Cntr[channel]] )
      )
    {
-      if(tia_audc[channel] & 4)
-         tia_volume[channel] = (!tia_volume[channel])? tia_audv[channel]: 0;
-      else if(tia_audc[channel] & 8)
+      if (tia_audc[channel] & 4)
+         tia_volume[channel] = (!tia_volume[channel]) ? tia_audv[channel]: 0;
+
+      else if (tia_audc[channel] & 8)
       {
-         if(tia_audc[channel] == 8)
+         if (tia_audc[channel] == 8)
          {
-            tia_poly9Cntr[channel]++;
-            if(tia_poly9Cntr[channel] == TIA_POLY9_SIZE)
-               tia_poly9Cntr[channel] = 0;
-            tia_volume[channel] = (TIA_POLY9[tia_poly9Cntr[channel]])? tia_audv[channel]: 0;
+            tia_poly9Cntr[channel] = (tia_poly9Cntr[channel]+1) % TIA_POLY9_SIZE;
+            tia_volume[channel] = (TIA_POLY9[tia_poly9Cntr[channel]]) ? tia_audv[channel]: 0;
          }
+
          else
-            tia_volume[channel] = (TIA_POLY5[tia_poly5Cntr[channel]])? tia_audv[channel]: 0;
+            tia_volume[channel] = (TIA_POLY5[tia_poly5Cntr[channel]]) ? tia_audv[channel]: 0;
       }
+
       else
       {
-         tia_poly4Cntr[channel]++;
-         if(tia_poly4Cntr[channel] == TIA_POLY4_SIZE)
-            tia_poly4Cntr[channel] = 0;
-         tia_volume[channel] = (TIA_POLY4[tia_poly4Cntr[channel]])? tia_audv[channel]: 0;
+         tia_poly4Cntr[channel] = (tia_poly4Cntr[channel] + 1) % TIA_POLY4_SIZE;
+         tia_volume[channel] = (TIA_POLY4[tia_poly4Cntr[channel]]) ? tia_audv[channel]: 0;
       }
    }
+}
+
+void tia_Frame(void)
+{
+   tia_count = 0;
 }
 
 void tia_Reset(void)
 {
    int index;
 
-   tia_soundCntr = 0;
-
-   for(index = 0; index < 2; index++)
+   for (index = 0; index < 2; index++)
    {
       tia_volume[index] = 0;
       tia_counterMax[index] = 0;
@@ -116,92 +121,106 @@ void tia_Reset(void)
       tia_poly5Cntr[index] = 0;
       tia_poly9Cntr[index] = 0;
    }
-   tia_Clear();
+
+   tia_cycles = 0;
 }
 
-void tia_Clear(void)
+void tia_Write(uint16_t address, uint8_t data)
 {
-   int index;
-   for(index = 0; index < TIA_BUFFER_SIZE; index++)
-      tia_buffer[index] = 0;
-}
-
-void tia_SetRegister(uint16_t address, uint8_t data)
-{
-   uint8_t channel;
    uint8_t frequency;
+   uint8_t channel = (address + 1) & 1;
 
-   switch(address)
+   switch (address)
    {
-      case AUDC0:
-         tia_audc[0] = data & 15;
-         channel = 0;
-         break;
+      case AUDC0:  /* Audio control */
       case AUDC1:
-         tia_audc[1] = data & 15;
-         channel = 1;
+         tia_audc[channel] = data & 0x0F;
          break;
-      case AUDF0:
-         tia_audf[0] = data & 31;
-         channel = 0;
-         break;
+
+      case AUDF0:  /* Audio frequency */
       case AUDF1:
-         tia_audf[1] = data & 31;
-         channel = 1;
+         tia_audf[channel] = data & 0x1F;
          break;
-      case AUDV0:
-         tia_audv[0] = (data & 15) << 2;
-         channel = 0;
-         break;
+
+      case AUDV0:  /* Audio volume */
       case AUDV1:
-         tia_audv[1] = (data & 15) << 2;
-         channel = 1;
+         tia_audv[channel] = data & 0x0F;
          break;
-      default:
+
+      default:  /* Unmapped */
          return;
    }
 
-   if(tia_audc[channel] == 0)
+
+   if (tia_audc[channel] == 0)  /* can update faster than 31400 counter (several times per frame) */
    {
       frequency = 0;
+
       tia_volume[channel] = tia_audv[channel];
    }
+
    else
    {
       frequency = tia_audf[channel] + 1;
+
       if(tia_audc[channel] > 11)
          frequency *= 3;
    }
 
-   if(frequency != tia_counterMax[channel])
+
+   if (frequency != tia_counterMax[channel])
    {
       tia_counterMax[channel] = frequency;
-      if(tia_counter[channel] == 0 || frequency == 0)
+
+      if (tia_counter[channel] == 0 || frequency == 0)
          tia_counter[channel] = frequency;
    }
 }
 
-void tia_Process(uint32_t length)
+static void tia_Process()
 {
-   uint32_t index;
-   for(index = 0; index < length; index++)
+   if (tia_counter[0] > 1)
+      tia_counter[0]--;
+
+   else if (tia_counter[0] == 1)
    {
-      if(tia_counter[0] > 1)
-         tia_counter[0]--;
-      else if(tia_counter[0] == 1)
-      {
-         tia_counter[0] = tia_counterMax[0];
-         tia_ProcessChannel(0);
-      }
-      if(tia_counter[1] > 1)
-         tia_counter[1]--;
-      else if(tia_counter[1] == 1)
-      {
-         tia_counter[1] = tia_counterMax[1];
-         tia_ProcessChannel(1);
-      }
-      tia_buffer[tia_soundCntr++] = tia_volume[0] + tia_volume[1];
-      if(tia_soundCntr >= tia_size)
-         tia_soundCntr = 0;
+      tia_counter[0] = tia_counterMax[0];
+      tia_ProcessChannel(0);
    }
+
+
+   if (tia_counter[1] > 1)
+      tia_counter[1]--;
+
+   else if (tia_counter[1] == 1)
+   {
+      tia_counter[1] = tia_counterMax[1];
+      tia_ProcessChannel(1);
+   }
+}
+
+void tia_Run(int cycles)
+{
+   tia_cycles += cycles;
+   while(tia_cycles >= (CYCLES_PER_SCANLINE / 2))  /* Maria / 228 ~ 1/2 scanline tick */
+	{
+      tia_Process();
+      tia_cycles -= (CYCLES_PER_SCANLINE / 2);
+	}
+}
+
+int tia_Output(void)
+{
+   int currentValue = tia_volume[0] + tia_volume[1];  /* 2x 4-bit unsigned */
+   currentValue *= (0x400 - 0x80);  /* 15-bit expand + overflow adjust */
+
+	tia_buffer[tia_count] = currentValue;
+   tia_count++;
+
+   return currentValue;
+}
+
+int16_t *tia_GetBuffer(void)
+{
+   return tia_buffer;
 }

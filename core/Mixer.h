@@ -20,8 +20,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * TiaSound is Copyright(c) 1997 by Ron Fries                                
- *                                                                           
  * This library is free software; you can redistribute it and/or modify it   
  * under the terms of version 2 of the GNU Library General Public License    
  * as published by the Free Software Foundation.                             
@@ -36,35 +34,33 @@
  * Any permitted reproduction of these routines, in whole or in part, must   
  * bear this legend.                                                         
  * ----------------------------------------------------------------------------
- * Tia.h
+ * Mixer.h
  * ----------------------------------------------------------------------------
  */
-#ifndef TIA_H
-#define TIA_H
+#ifndef MIXER_H
+#define MIXER_H
 
 #include <stdint.h>
 #include "Equates.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void tia_Reset(void);
-extern void tia_Write(uint16_t address, uint8_t data);
-extern void tia_Frame(void);
-extern void tia_Run(int cycles);
-extern int tia_Output(void);
-extern int16_t *tia_GetBuffer(void);
 
-extern uint8_t tia_volume[2];
-extern uint8_t tia_counterMax[2];
-extern uint8_t tia_counter[2];
-extern uint8_t tia_audc[2];
-extern uint8_t tia_audf[2];
-extern uint8_t tia_audv[2];
-extern int tia_poly4Cntr[2];
-extern int tia_poly5Cntr[2];
-extern int tia_poly9Cntr[2];
+#define MAX_SOUND_SAMPLES (3 * 2 * 384000 / 50 / 4)  /* 384000 stereo x 1.25 overflow */
+
+
+extern void mixer_Reset(void);
+extern void mixer_Frame(void);
+extern void mixer_Run(int cycles);
+extern void mixer_SetRate(int rate);
+
+extern int mixer_GetCount(void);
+extern int16_t* mixer_GetBuffer(void);
+extern void mixer_FrameEnd(void);
+
 
 #ifdef __cplusplus
 }

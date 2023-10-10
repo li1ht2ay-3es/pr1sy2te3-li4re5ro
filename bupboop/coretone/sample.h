@@ -8,6 +8,10 @@
 #ifndef CORETONE_SAMPLE
 #define CORETONE_SAMPLE
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************
  * Operating Parameters
  ******************************************************************************/
@@ -58,4 +62,9 @@ void ct_sample_get(uint32_t uiSample, int8_t **ppData, uint32_t *puiLen);
 int16p16_t ct_sample_calcPhase(uint32_t uiSample, int16p16_t freq);
 
 int32_t ct_sample_setup(uint8_t *pSamplePak);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

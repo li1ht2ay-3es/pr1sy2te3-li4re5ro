@@ -23,12 +23,15 @@
  * BupChip.c
  * ----------------------------------------------------------------------------
  */
-#include "BupChip.h"
-#include "Cartridge.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include "libretro.h"
+#include "../bupboop/coretone/coretone.h"
+#include "BupChip.h"
+#include "ProSystem.h"
+#include "Cartridge.h"
+#include "Maria.h"
 
 #define BUPCHIP_FLAGS_PLAYING   1
 #define BUPCHIP_FLAGS_PAUSED   2
@@ -50,7 +53,14 @@ uint8_t bupchip_flags;
 uint8_t bupchip_volume;
 uint8_t bupchip_current_song;
 
-short bupchip_buffer[CORETONE_BUFFER_LEN * 4];
+static int bupchip_rate;
+static int bupchip_count;
+static int bupchip_tick;
+static int bupchip_tick2;
+static int bupchip_cycles;
+static int bupchip_cycles2;
+int16_t bupchip_buffer[MAX_SOUND_SAMPLES];
+
 
 static void bupchip_ReplaceChar(char *string, char character, char replacement)
 {
@@ -61,6 +71,28 @@ static void bupchip_ReplaceChar(char *string, char character, char replacement)
       *string = replacement;
       string++;
    }
+}
+
+void bupchip_Frame(void)
+{
+   bupchip_count = 0;
+}
+
+static void bupchip_SetRate()
+{
+   int clock = CYCLES_PER_SCANLINE * prosystem_scanlines * prosystem_frequency;  /* Maria */
+	bupchip_rate = CORETONE_DECODE_RATE;  /* 240 Hz = default */
+
+   bupchip_tick  = clock / bupchip_rate;
+   bupchip_tick2 = clock % bupchip_rate;
+
+   bupchip_cycles = bupchip_tick;
+   bupchip_cycles = bupchip_rate;
+}
+
+void bupchip_Reset(void)
+{
+   bupchip_SetRate();
 }
 
 int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDir)
@@ -99,6 +131,7 @@ int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDi
    for(songIndex = 0; songIndex < fileDataCount - 2; songIndex++)
       bupchip_songs[songIndex] = fileData[songIndex + 2];
    bupchip_song_count = (uint8_t)(fileDataCount - 2);
+
    return 1;
 
 err:
@@ -147,10 +180,12 @@ void bupchip_SetVolume(uint8_t volume)
 {
    int attenuation;
    bupchip_volume = volume & 0x1f;
+
    /* This matches BupSystem. */
    attenuation = volume << 2;
    if((volume & 1) != 0)
       attenuation += 0x3;
+
    ct_attenMusic(attenuation);
 }
 
@@ -158,7 +193,7 @@ void bupchip_ProcessAudioCommand(unsigned char data)
 {
    switch(data & 0xc0)
    {
-   case 0:
+   case 0x00:
       switch(data)
       {
       case 0:
@@ -167,21 +202,26 @@ void bupchip_ProcessAudioCommand(unsigned char data)
          ct_stopAll();
          ct_resume();
          ct_attenMusic(127);
-	 break;
+         break;
+
       case 2:
          bupchip_Resume();
-	 break;
+	      break;
+
       case 3:
          bupchip_Pause();
-	 break;
+	      break;
       }
       break;
+
    case 0x40:
       bupchip_Stop();
       break;
+
    case 0x80:
       bupchip_Play(data & 0x1f);
       break;
+
    case 0xc0:
       bupchip_SetVolume(data);
       break;
@@ -201,21 +241,72 @@ void bupchip_Release(void)
       free(bupchip_songs[i].data);
       bupchip_songs[i].data = NULL;
    }
-   free(bupchip_instrument_data);
+
+	free(bupchip_instrument_data);
    bupchip_instrument_data = NULL;
-   free(bupchip_sample_data);
+
+	free(bupchip_sample_data);
    bupchip_sample_data     = NULL;
 }
 
 void bupchip_StateLoaded(void)
 {
    ct_stopAll();
-   if((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+
+	if((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
       return;
-   ct_playMusic(bupchip_songs[bupchip_current_song].data);
-   if((bupchip_flags & BUPCHIP_FLAGS_PAUSED) != 0)
-      ct_pause();
-   else
-      ct_resume();
-   bupchip_SetVolume(bupchip_volume);
+
+	ct_playMusic(bupchip_songs[bupchip_current_song].data);
+
+	(bupchip_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
+
+	bupchip_SetVolume(bupchip_volume);
+}
+
+void bupchip_Run(int cycles)
+{
+   if (!cartridge_bupchip)
+      return;
+
+
+   bupchip_cycles += cycles;
+   while (bupchip_cycles >= bupchip_tick)  /* usually 240 Hz */
+	{
+      if (bupchip_cycles == bupchip_tick)  /* fractional */
+	   {
+         if (bupchip_cycles2 < bupchip_tick2)
+            break;
+	   }
+
+
+      bupchip_Process(bupchip_count);
+      bupchip_count++;
+
+
+      bupchip_cycles -= bupchip_tick;
+		bupchip_cycles2 -= bupchip_tick2;
+      if (bupchip_cycles2 < 0)  /* borrow */
+		{
+         bupchip_cycles--;
+         bupchip_cycles2 += bupchip_rate;
+		}
+   }
+}
+
+int bupchip_Output()
+{
+   if (!cartridge_bupchip)
+	{
+      bupchip_buffer[bupchip_count+0] = 0;
+      bupchip_buffer[bupchip_count+1] = 0;
+      bupchip_count += 2;
+      return 0;
+	}
+
+	return 0;  /* stream decoder */
+}
+
+int16_t *bupchip_GetBuffer(void)
+{
+   return bupchip_buffer;
 }

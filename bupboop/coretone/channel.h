@@ -7,6 +7,11 @@
  ******************************************************************************/
 #ifndef CORETONE_CHANNEL
 #define CORETONE_CHANNEL
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************
  * Operating Parameters
  ******************************************************************************/
@@ -131,4 +136,9 @@ void ct_patch_decode(CorePatch_t *pPatch);
 
 void ct_sfx_dispatch(uint8_t *pSFX, int8_t cPriority, int8_t cVol_Left, int8_t cVol_Right);
 void ct_sfx_stop(int8_t cPriority);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

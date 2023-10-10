@@ -34,10 +34,9 @@ extern "C" {
 #endif
 
 extern void sally_Reset(void);
-extern uint32_t sally_ExecuteInstruction(void);
-extern uint32_t sally_ExecuteRES(void);
-extern uint32_t sally_ExecuteNMI(void);
-extern uint32_t sally_ExecuteIRQ(void);
+extern void sally_SetNMI(void);
+extern int sally_Run(void);
+extern int sally_SlowCycles(void);
 
 extern uint8_t sally_a;
 extern uint8_t sally_x;

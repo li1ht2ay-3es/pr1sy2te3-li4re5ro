@@ -7,6 +7,11 @@
  ******************************************************************************/
 #ifndef CORETONE_MUSIC
 #define CORETONE_MUSIC
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************
  * Operating Parameters
  ******************************************************************************/
@@ -145,4 +150,8 @@ int32_t ct_instr_setup(uint8_t *pInstrPak);
 void ct_music_recalcVol(CoreTrack_t *pTrack);
 void ct_music_decode(CoreTrack_t *pTrack);
 int32_t ct_music_setup(uint8_t *pMusic);
+#ifdef __cplusplus
+}
+#endif
+
 #endif

@@ -26,20 +26,33 @@
 #ifndef BUPCHIP_H
 #define BUPCHIP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
+#include "Mixer.h"
 #include "../bupboop/types.h"
 #include "../bupboop/coretone/coretone.h"
 
 extern unsigned char bupchip_flags;
 extern unsigned char bupchip_volume;
 extern unsigned char bupchip_current_song;
-extern short bupchip_buffer[CORETONE_BUFFER_LEN * 4];
 
 int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDir);
 void bupchip_ProcessAudioCommand(unsigned char data);
 void bupchip_Process(unsigned tick);
 void bupchip_Release(void);
 void bupchip_StateLoaded(void);
+void bupchip_Frame(void);
+void bupchip_Run(int cycles);
+int bupchip_Output(void);
+int16_t *bupchip_GetBuffer(void);
+void bupchip_Reset(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
