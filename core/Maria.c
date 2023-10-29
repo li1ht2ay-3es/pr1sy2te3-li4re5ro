@@ -60,7 +60,7 @@ static uint8_t maria_ReadByte(uint16_t address)
 {
    uint32_t page, chrOffset;
 
-   if (address >= 0x20 && address < 0x40)  /* internal MARIA register */
+   if ((address >= 0x20) && (address < 0x40))  /* internal MARIA register */
       return memory_ram[address];
 
    if (cartridge_type != CARTRIDGE_TYPE_SOUPER)
