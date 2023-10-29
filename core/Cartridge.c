@@ -86,23 +86,20 @@ char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
    return NULL;
 }
 
-#include <stdio.h>
 bool cartridge_ReadFile(uint8_t** outData, size_t* outSize, const char* subpath, const char* relativeTo)
 {
    int64_t len    = 0;
    size_t pathLen = strlen(subpath) + strlen(relativeTo) + 1;
    char* path     = (char*)malloc(pathLen + 1);
-FILE *fp = fopen("debug.bin", "wb");
 #ifdef _WIN32
    char pathSeparator = '\\';
 #else
    char pathSeparator = '/';
 #endif
    sprintf(path, "%s%c%s", relativeTo, pathSeparator, subpath);
-printf("%s\n", path);
+
    filestream_read_file(path, (void**)outData, &len);
    *outSize = (size_t)len;
-fwrite(*outData, 1, len, fp);
    return len > 0;
 }
 

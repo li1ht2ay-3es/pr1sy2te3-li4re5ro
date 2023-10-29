@@ -31,15 +31,6 @@
 #include "Cartridge.h"
 #include "ProSystem.h"
 
-/*
-RevEng:
-- a line length is exactly 113.5 CPU cycles. 454 cycles per scanline.
-- an NTSC frame is exactly 29850.5 CPU cycles. 263 scanlines.
-- there is no clock sync when DMA is turned off. (we already knew that MARIA waits for the CPU to complete an instruction before it halts the CPU for DMA)
-- DMA for "other line" scanlines is: 113.5-109.5 CPU cycles = 4 CPU cycles = 16 MPU cycles
-- DMA for "last line" scanlines is: 113.5-107.5 CPU cycles = 6 CPU cycles = 24 MPU cycles
-*/
-
 #define MARIA_LINERAM_SIZE 160
 #define MARIA_CYCLE_LIMIT 430
 
@@ -78,8 +69,8 @@ static uint8_t maria_ReadByte(uint16_t address)
 
    /* Souper */
 
-   if ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_MFT) == 0 || address < 0x8000 ||
-      ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_CHR) == 0 && address < 0xc000))
+   if (((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_MFT) == 0) || (address < 0x8000) ||
+      (((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_CHR) == 0) && (address < 0xc000)))
       return memory_Read(address);
 
    if (address >= 0xC000) /* EXRAM */
