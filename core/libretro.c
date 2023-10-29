@@ -463,6 +463,8 @@ bool retro_load_game(const struct retro_game_info *info)
        info_ext->persistent_data)
       persistent_data = true;
 
+if (log_cb) log_cb(RETRO_LOG_INFO, "%d %s\n",info->size, info->data);
+
    if (info->size >= 10 && memcmp(info->data, "ProSystem", 9) == 0)
    {
       /* CDF file. */
