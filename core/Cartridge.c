@@ -53,6 +53,7 @@ static uint32_t cartridge_size = 0;
 uint8_t ex_ram_buffer[0x8000];
 uint8_t banksets_memory[64*1024];
 
+#include <stdio.h>
 char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
 {
    while(*size != 0)
@@ -80,6 +81,7 @@ char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
       line_buffer = (char*)malloc(end - line + 1);
       memcpy(line_buffer, line, end - line);
       line_buffer[end - line] = '\0';
+printf("%s\n", line_buffer);
       return line_buffer;
    }
 
