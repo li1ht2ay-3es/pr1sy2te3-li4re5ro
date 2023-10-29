@@ -1,27 +1,42 @@
-// ----------------------------------------------------------------------------
-//   ___  ___  ___  ___       ___  ____  ___  _  _
-//  /__/ /__/ /  / /__  /__/ /__    /   /_   / |/ /
-// /    / \  /__/ ___/ ___/ ___/   /   /__  /    /  emulator
-//
-// ----------------------------------------------------------------------------
-// Copyright 2003, 2004 Greg Stanton
-// 
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-// ----------------------------------------------------------------------------
-// ProSystem.cpp
-// ----------------------------------------------------------------------------
+/* ----------------------------------------------------------------------------
+ *   ___  ___  ___  ___       ___  ____  ___  _  _
+ *  /__/ /__/ /  / /__  /__/ /__    /   /_   / |/ /
+ * /    / \  /__/ ___/ ___/ ___/   /   /__  /    /  emulator
+ *
+ * ----------------------------------------------------------------------------
+ * Copyright 2005 Greg Stanton
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * ----------------------------------------------------------------------------
+ * This library is free software; you can redistribute it and/or modify it   
+ * under the terms of version 2 of the GNU Library General Public License    
+ * as published by the Free Software Foundation.                             
+ *                                                                           
+ * This library is distributed in the hope that it will be useful, but       
+ * WITHOUT ANY WARRANTY; without even the implied warranty of                
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library 
+ * General Public License for more details.                                  
+ * To obtain a copy of the GNU Library General Public License, write to the  
+ * Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   
+ *                                                                           
+ * Any permitted reproduction of these routines, in whole or in part, must   
+ * bear this legend.                                                         
+ * ----------------------------------------------------------------------------
+ * ProSystem.c
+ * ----------------------------------------------------------------------------
+ */
 #include "ProSystem.h"
 #include "Mixer.h"
 #include "Bios.h"
@@ -59,12 +74,12 @@ void prosystem_Reset()
 
    sally_Reset();
    region_Reset();
-   tia_Reset();
-   pokey_Reset( );
    memory_Reset();
    maria_Reset();
-	riot_Reset();
+   riot_Reset();
    mixer_Reset();
+   tia_Reset();
+   pokey_Reset( );
    bupchip_Reset();
    /* cartridge_LoadHighScoreCart(); */
 
@@ -74,10 +89,16 @@ void prosystem_Reset()
       cartridge_Store();
 
 #ifdef _WINDOWS
-	prosystem_active = true;
+   prosystem_active = true;
    prosystem_paused = false;
    prosystem_frame = 0;
 #endif
+}
+
+void prosystem_SetRate(int rate)
+{
+   mixer_SetRate(rate);
+   bupchip_SetRate(rate);
 }
 
 static void prosystem_FireLightGun()
@@ -101,7 +122,11 @@ void prosystem_ExecuteFrame(const uint8_t* input)
    int cycles_total = 0;
 
    riot_SetInput(input);
-	mixer_Frame();
+
+   mixer_Frame();
+   tia_Frame();
+   pokey_Frame();
+   bupchip_Frame();
 
    for (maria_scanline = 0; maria_scanline < prosystem_scanlines; maria_scanline++)
    {
@@ -377,7 +402,7 @@ void prosystem_Pause(bool pause)
 }
 #endif
 
-void prosystem_Close(int persistent_data)
+void prosystem_Close(bool persistent_data)
 {
 #ifdef _WINDOWS  /* standalone */
    prosystem_active = false;

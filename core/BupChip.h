@@ -40,16 +40,17 @@ extern unsigned char bupchip_flags;
 extern unsigned char bupchip_volume;
 extern unsigned char bupchip_current_song;
 
-int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDir);
-void bupchip_ProcessAudioCommand(unsigned char data);
-void bupchip_Process(unsigned tick);
-void bupchip_Release(void);
-void bupchip_StateLoaded(void);
-void bupchip_Frame(void);
-void bupchip_Run(int cycles);
-int bupchip_Output(void);
-int16_t *bupchip_GetBuffer(void);
-void bupchip_Reset(void);
+extern int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDir);
+extern void bupchip_ProcessAudioCommand(unsigned char data);
+extern void bupchip_Process(unsigned tick);
+extern void bupchip_Release(void);
+extern void bupchip_StateLoaded(void);
+extern void bupchip_Frame(void);
+extern void bupchip_Run(int cycles);
+extern int bupchip_Output(void);
+extern int16_t *bupchip_GetBuffer(void);
+extern void bupchip_Reset(void);
+extern void bupchip_SetRate(int rate);
 
 #ifdef __cplusplus
 }

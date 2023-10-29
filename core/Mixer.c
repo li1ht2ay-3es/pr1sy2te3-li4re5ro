@@ -57,7 +57,8 @@ static int mixer_tick2 = 0;
 
 void mixer_Reset(void)
 {
-   mixer_SetRate(mixer_rate);
+   mixer_cycles = 0;
+   mixer_cycles2 = 0;
 }
 
 void mixer_SetRate(int rate)
@@ -68,32 +69,23 @@ void mixer_SetRate(int rate)
 
    mixer_tick  = clock / mixer_rate;
    mixer_tick2 = clock % mixer_rate;
-
-   mixer_cycles = 0;
-   mixer_cycles2 = 0;
-
-   ct_setrate(rate);  /* bupchip */
 }
 
 void mixer_Frame(void)
 {
    mixer_count = 0;
-
-   tia_Frame();
-   pokey_Frame();
-   bupchip_Frame();
 }
 
 void mixer_Run(int cycles)
 {
    mixer_cycles += cycles;
    while(mixer_cycles >= mixer_tick)
-	{
+   {
       if (mixer_cycles == mixer_tick)  /* fractional */
-	   {
+      {
          if (mixer_cycles2 < mixer_tick2)
             break;
-	   }
+      }
 
 
       tia_Output();
@@ -105,10 +97,10 @@ void mixer_Run(int cycles)
       mixer_cycles -= mixer_tick;
       mixer_cycles2 -= mixer_tick2;
       if (mixer_cycles2 < 0)  /* borrow */
-		{
+      {
          mixer_cycles--;
          mixer_cycles2 += mixer_rate;
-		}
+      }
 	}
 }
 
@@ -137,24 +129,24 @@ void mixer_FrameEnd(void)
 
 
    for( index = 0; index < mixer_count; index += 2 )
-	{
+   {
       left = tia_buffer[index];
-		left += pokey_buffer[index];
+      left += pokey_buffer[index];
       right = left;
 
-		left += bupchip_buffer[index*2 + 0];
-		right += bupchip_buffer[index*2 + 1];
+      left += bupchip_buffer[index*2 + 0];
+      right += bupchip_buffer[index*2 + 1];
 
-		left = (left > 0x7FFF) ? 0x7FFF : left;
-		right = (right > 0x7FFF) ? 0x7FFF : right;
+      left = (left > 0x7FFF) ? 0x7FFF : left;
+      right = (right > 0x7FFF) ? 0x7FFF : right;
 
 
-		//output = (lowpass_output * factor_a) + (output * factor_b);
-		//output >>= 16;
-		lowpass_output = left;
+      //output = (lowpass_output * factor_a) + (output * factor_b);
+      //output >>= 16;
+      lowpass_output = left;
 
 
       mixer_buffer[index*2 + 0] = left;
       mixer_buffer[index*2 + 1] = right;
-	}
+   }
 }
