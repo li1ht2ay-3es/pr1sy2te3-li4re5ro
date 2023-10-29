@@ -53,7 +53,6 @@ static uint32_t cartridge_size = 0;
 uint8_t ex_ram_buffer[0x8000];
 uint8_t banksets_memory[64*1024];
 
-#include <stdio.h>
 char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
 {
    while(*size != 0)
@@ -81,27 +80,29 @@ char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
       line_buffer = (char*)malloc(end - line + 1);
       memcpy(line_buffer, line, end - line);
       line_buffer[end - line] = '\0';
-printf("%s\n", line_buffer);
       return line_buffer;
    }
 
    return NULL;
 }
 
+#include <stdio.h>
 bool cartridge_ReadFile(uint8_t** outData, size_t* outSize, const char* subpath, const char* relativeTo)
 {
    int64_t len    = 0;
    size_t pathLen = strlen(subpath) + strlen(relativeTo) + 1;
    char* path     = (char*)malloc(pathLen + 1);
+FILE *fp = fopen("debug.bin", "wb");
 #ifdef _WIN32
    char pathSeparator = '\\';
 #else
    char pathSeparator = '/';
 #endif
    sprintf(path, "%s%c%s", relativeTo, pathSeparator, subpath);
-
+printf("%s\n", path);
    filestream_read_file(path, (void**)outData, &len);
    *outSize = (size_t)len;
+fwrite(*outData, 1, len, fp);
    return len > 0;
 }
 
