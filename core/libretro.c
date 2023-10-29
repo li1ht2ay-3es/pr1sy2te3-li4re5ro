@@ -473,7 +473,11 @@ bool retro_load_game(const struct retro_game_info *info)
       memcpy(workingDir, info->path, baseSize);
       workingDir[baseSize] = '\0';
 
+if (log_cb) log_cb(RETRO_LOG_INFO, "%s\n",workingDir);
+
       ok = cartridge_LoadFromCDF((const char *) info->data, info->size, workingDir);
+
+if (log_cb) log_cb(RETRO_LOG_INFO, "%d\n",ok);
 
       free(workingDir);
 
@@ -497,6 +501,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (bios_Load(biospath))
       bios_enabled = true;
 
+if (log_cb) log_cb(RETRO_LOG_INFO, "96000\n");
    prosystem_SetRate(96000);
    prosystem_Reset();
 
