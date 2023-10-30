@@ -17,18 +17,18 @@
 #include <libretro.h>
 #include "libretro_core_options.h"
 
-#include "Bios.h"
 #include "Cartridge.h"
-#include "Database.h"
 #include "Maria.h"
-#include "Palette.h"
 #include "Pokey.h"
-#include "Region.h"
 #include "ProSystem.h"
 #include "Tia.h"
 #include "Memory.h"
 #include "BupChip.h"
 #include "Mixer.h"
+#include "Database.h"
+#include "Palette.h"
+#include "Bios.h"
+#include "Region.h"
 
 #ifdef _3DS
 extern void* linearMemAlign(size_t size, size_t alignment);
@@ -482,7 +482,7 @@ bool retro_load_game(const struct retro_game_info *info)
             (const uint8_t*)info->data, info->size))
       return false;
 
-   database_Load(cartridge_digest);
+   //database_Load(cartridge_digest);
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
 

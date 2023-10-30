@@ -41,8 +41,8 @@
  */
 #include "Tia.h"
 #include "Maria.h"
-#include "ProSystem.h"
 #include "Mixer.h"
+#include "ProSystem.h"
 
 #define TIA_POLY4_SIZE 15
 #define TIA_POLY5_SIZE 31
@@ -212,7 +212,7 @@ void tia_Run(int cycles)
 int tia_Output(void)
 {
    int currentValue = tia_volume[0] + tia_volume[1];  /* 2x 4-bit unsigned */
-   currentValue *= (0x400 - 0x80);  /* 15-bit expand + overflow adjust */
+   currentValue *= 0x400;  /* 15-bit expand */
 
 	tia_buffer[tia_count] = currentValue;
    tia_count++;

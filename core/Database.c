@@ -1361,7 +1361,7 @@ static const struct cartridge_db db_list[] =
    {
       "b3bc889e9cc498636990c5a4d980e85c",         /* digest */
       "Rikki & Vikki",                            /* title */
-      7,                                          /* type */
+      CARTRIDGE_TYPE_SOUPER,                      /* type */
       false,                                      /* pokey */
       1,                                          /* controller 1 */
       1,                                          /* controller 2 */

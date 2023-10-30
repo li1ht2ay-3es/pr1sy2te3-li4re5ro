@@ -60,7 +60,7 @@ static uint8_t maria_ReadByte(uint16_t address)
 {
    uint32_t page, chrOffset;
 
-   if ((address >= 0x20) && (address < 0x40))  /* internal MARIA register */
+   if (address >= 0x20 && address < 0x40)  /* internal MARIA register */
       return memory_ram[address];
 
    if (cartridge_type != CARTRIDGE_TYPE_SOUPER)
@@ -69,8 +69,8 @@ static uint8_t maria_ReadByte(uint16_t address)
 
    /* Souper */
 
-   if (((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_MFT) == 0) || (address < 0x8000) ||
-      (((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_CHR) == 0) && (address < 0xc000)))
+   if ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_MFT) == 0 || address < 0x8000 ||
+      ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_CHR) == 0 && address < 0xc000))
       return memory_Read(address);
 
    if (address >= 0xC000) /* EXRAM */
@@ -89,7 +89,7 @@ static void maria_StoreCell(uint8_t data)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
-      if (data)
+      if (data & 3)  /* non-transparent */
          maria_lineRAM[maria_horizontal] = maria_palette | data;
 
       else if (maria_ctrl & 0x04)  /* kangaroo */
@@ -103,10 +103,10 @@ static void maria_StoreCell2(uint8_t high, uint8_t low)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
-      if (low || high)
+      if ((low | high) & 3)
          maria_lineRAM[maria_horizontal] = (maria_palette & 0x10) | high | low;
 
-      else if (maria_ctrl & 0x04)  /* kangaroo */
+      else if (maria_ctrl & 0x04)
          maria_lineRAM[maria_horizontal] = 0;
    }
 
@@ -252,7 +252,8 @@ static void maria_StoreLineRAM(void)
       maria_pp.b.l = maria_ReadByte(list_dp.w++);
       mode = maria_ReadByte(list_dp.w++);
 
-      if ((mode & 0x5F) == 0) break;  /* list end */
+      if ((mode & 0x5F) == 0)  /* list end */
+         break;
 
       maria_pp.b.h = maria_ReadByte(list_dp.w++);
 
@@ -281,8 +282,8 @@ static void maria_StoreLineRAM(void)
          uint8_t data1, data2;
          bool is_holey;
 
-
-			if (maria_cycles >= MARIA_CYCLE_LIMIT) break;
+			if (maria_cycles >= MARIA_CYCLE_LIMIT)
+            break;
 
 
          if (!indirect)
@@ -396,6 +397,7 @@ static int maria_RenderScanline(void)
       if (!maria_offset--)  /* zone finished */
       {
          maria_cycles += 6;  /* extra shutdown time */
+if(maria_ctrl & 0x10) maria_cycles += 6;
 
          maria_LoadDisplayList();
       }

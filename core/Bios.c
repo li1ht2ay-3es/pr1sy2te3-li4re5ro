@@ -29,9 +29,9 @@
 #include "Bios.h"
 #include "Memory.h"
 
+
 /* Forward declaration */
-int64_t rfread(void* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream);
+extern int64_t rfread(void* buffer, size_t elem_size, size_t elem_count, RFILE* stream);
 
 
 #define BIOS_SOURCE "Bios.cpp"

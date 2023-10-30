@@ -44,7 +44,7 @@
 
 #include <stdint.h>
 #include <boolean.h>
-#include <stddef.h>
+//#include <stddef.h>
 
 
 #ifdef __cplusplus
@@ -66,8 +66,8 @@ extern void prosystem_SetRate(int rate);
 
 
 
-#ifdef _WINDOWS
-#include <String>
+#if defined(__cplusplus) && defined(_WINDOWS)
+#include <string>
 
 typedef unsigned char byte;
 typedef unsigned short word;

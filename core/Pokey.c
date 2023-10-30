@@ -118,6 +118,9 @@ static int prev_random_scanline_counter;
 static int pokey_count;
 static int pokey_cycles;
 static int16_t pokey_buffer[MAX_SOUND_SAMPLES];
+static int pokey_lowpass[4];
+
+#define POKEY_LOWPASS_LIMIT 32  /* 1.789 MHz @ 55906  (24 = noise)*/
 
 static void rand_init(uint8_t *rng, uint32_t size, uint32_t left, uint32_t right, uint32_t add)
 {
@@ -190,6 +193,7 @@ void pokey_Reset(void)
       pokey_audc[index] = 0;
       pokey_audf[index] = 0;
       pokey_filter[index] = (index < 2) ? 1 : 0;
+		pokey_lowpass[index] = 0;
    }
 
    for (index = 0; index < 8; index++)
@@ -341,9 +345,6 @@ void pokey_SetRegister(uint16_t address, uint8_t value)
 
 static void inc_channel(int index, int cycles)
 {
-   if (pokey_audf[index] == 0)  /* attenuation hack: Bentley Bear, Synthpopalooza demos */
-      return;
-
    pokey_divideCount[index]++;
 
    if (!pokey_divideCount[index] && !pokey_borrowCount[index])
@@ -480,6 +481,9 @@ static void pokey_Process(void)
          pokey_filter[ch-2] = (pokey_audctl & filter) ? pokey_output[ch-2] : 1;
       }
    }
+
+   for (index = 0; index < 4; index++)
+      pokey_lowpass[index] = pokey_output[index] ? pokey_lowpass[index] + 1 : 0;  /* count how many ticks high output */
 }
 
 void pokey_Run(int cycles)
@@ -501,7 +505,7 @@ int pokey_Output(void)
    int index;
    int currentValue = 0;
    int active = 4;
-	int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
+	int adjust[5] = { 0, 0, 0x400*2, 0x300*2, 0x200*2 };  /* 10-bit, 9.5-bit, 9-bit expansion */
 
 
    if (!cartridge_pokey)
@@ -512,13 +516,18 @@ int pokey_Output(void)
 	}
 
 
-   for (index = POKEY_CHANNEL1; index <= POKEY_CHANNEL4; index++)  /* 4x 4-bit unsigned */
+   for (index = POKEY_CHANNEL4; index <= POKEY_CHANNEL4; index++)  /* 4x 4-bit unsigned */
+	{
+      if (pokey_lowpass[index] <= POKEY_LOWPASS_LIMIT)  /* ignore very high frequency */
+         continue;
+
       currentValue += ((pokey_output[index] ^ pokey_filter[index]) || (pokey_audc[index] & POKEY_VOLUME_ONLY)) ? (pokey_audc[index] & POKEY_VOLUME_MASK) : 0;
+	}
 
    active -= (pokey_audctl & POKEY_CH1_CH2) ? 1 : 0;  /* 16-bit channels */
    active -= (pokey_audctl & POKEY_CH3_CH4) ? 1 : 0;
 
-   currentValue *= (adjust[active] - 0x80);  /* expand + overflow adjust */
+   currentValue *= adjust[active];  /* 16-bit signed */
    pokey_buffer[pokey_count] = currentValue;
    pokey_count++;
 

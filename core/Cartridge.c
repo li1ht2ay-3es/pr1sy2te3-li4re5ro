@@ -23,8 +23,8 @@
  * Cartridge.c
  * ----------------------------------------------------------------------------
  */
+#include "ProSystem.h"
 #include "Cartridge.h"
-#include "Equates.h"
 #include "Memory.h"
 #include "Hash.h"
 #include "Pokey.h"
@@ -559,6 +559,8 @@ void cartridge_Store(void)
 
 void cartridge_Write(uint16_t address, uint8_t data)
 {
+   uint32_t offset;
+
    switch(cartridge_type)
    {
       case CARTRIDGE_TYPE_SUPERCART:
@@ -634,7 +636,7 @@ void cartridge_Write(uint16_t address, uint8_t data)
             cartridge_StoreBank(data);
 
 			// And also swap in the Maria memory... this ROM starts half-way up the main cartridge_buffer[]
-            uint32_t offset = (cartridge_size/2) + (data*0x4000);
+            offset = (cartridge_size/2) + (data*0x4000);
             memcpy(&banksets_memory[0x8000], &cartridge_buffer[offset], 0x4000);
          }
          break;
@@ -646,7 +648,7 @@ void cartridge_Write(uint16_t address, uint8_t data)
             cartridge_StoreBank(data);
 
             // And also swap in the Maria memory... this ROM starts half-way up the main cartridge_buffer[]
-            uint32_t offset = (cartridge_size/2) + (data*0x4000);
+            offset = (cartridge_size/2) + (data*0x4000);
             memcpy(&banksets_memory[0x8000], &cartridge_buffer[offset], 0x4000);
          }
          else if ((address & 0xc000) == 0xc000) // Are we writing to MARIA HALT RAM?

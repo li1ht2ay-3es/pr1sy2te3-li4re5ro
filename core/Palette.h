@@ -20,6 +20,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
+ * This library is free software; you can redistribute it and/or modify it   
+ * under the terms of version 2 of the GNU Library General Public License    
+ * as published by the Free Software Foundation.                             
+ *                                                                           
+ * This library is distributed in the hope that it will be useful, but       
+ * WITHOUT ANY WARRANTY; without even the implied warranty of                
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library 
+ * General Public License for more details.                                  
+ * To obtain a copy of the GNU Library General Public License, write to the  
+ * Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   
+ *                                                                           
+ * Any permitted reproduction of these routines, in whole or in part, must   
+ * bear this legend.                                                         
+ * ----------------------------------------------------------------------------
  * Palette.h
  * ----------------------------------------------------------------------------
  */
@@ -41,6 +55,19 @@ extern bool palette_default;
 
 #ifdef __cplusplus
 }
+#endif
+
+
+#ifdef __cplusplus
+#include <String>
+#include "Logger.h"
+
+typedef unsigned char byte;
+typedef unsigned short word;
+typedef unsigned int uint;
+
+extern bool palette_Load(std::string filename);
+extern std::string palette_filename;
 #endif
 
 #endif
