@@ -516,7 +516,7 @@ int pokey_Output(void)
 	}
 
 
-   for (index = POKEY_CHANNEL4; index <= POKEY_CHANNEL4; index++)  /* 4x 4-bit unsigned */
+   for (index = POKEY_CHANNEL1; index <= POKEY_CHANNEL4; index++)  /* 4x 4-bit unsigned */
 	{
       if (pokey_lowpass[index] <= POKEY_LOWPASS_LIMIT)  /* ignore very high frequency */
          continue;
