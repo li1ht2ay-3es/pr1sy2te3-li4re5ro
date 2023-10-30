@@ -497,7 +497,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (bios_Load(biospath))
       bios_enabled = true;
 
-   mixer_SetRate(96000);
+   prosystem_SetRate(96000);
    prosystem_Reset();
 
    display_ResetPalette();
