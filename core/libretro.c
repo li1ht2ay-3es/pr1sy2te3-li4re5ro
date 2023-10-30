@@ -142,8 +142,6 @@ static void sound_Store(void)
    int16_t *audioOutBuffer = mixer_GetBuffer();
    int audio_size = mixer_GetCount();
 
-printf("%d\n", audio_size);
-
    audio_batch_cb(audioOutBuffer, audio_size);
 }
 
