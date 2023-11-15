@@ -55,8 +55,8 @@ static int32_t low_pass_range          = 0;
 static int32_t low_pass_prev           = 0; /* Previous sample */
 
 /* Save state info */
-#define SAVE_STATE_SIZE                49221
-#define FAST_SAVE_STATE_SIZE           83968
+#define SAVE_STATE_SIZE                0x10000
+#define FAST_SAVE_STATE_SIZE           0x30000
 static bool fast_savestates;
 
 static retro_log_printf_t log_cb;
@@ -339,26 +339,20 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
-#if 0
    fast_savestates = get_fast_savestates();
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
-   //return prosystem_Save((char*)data, fast_savestates);
-#endif
-   return false;
+   return prosystem_Save((char*)data, fast_savestates);
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-#if 0
    fast_savestates = get_fast_savestates();
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
-   //return prosystem_Load((const char*)data, fast_savestates);
-#endif
-   return false;
+   return prosystem_Load((const char*)data, fast_savestates);
 }
 
 void retro_cheat_reset(void)
