@@ -689,7 +689,8 @@ WARNINGS := -Wall \
 	-Wno-uninitialized \
 	-Wno-strict-aliasing \
 	-Wno-overflow \
-	-fno-strict-overflow
+	-fno-strict-overflow \
+        -Wnull-dereference
 endif
 
 FLAGS += -D__LIBRETRO__ $(WARNINGS)
