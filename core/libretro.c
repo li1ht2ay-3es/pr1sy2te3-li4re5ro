@@ -411,9 +411,6 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!info)
       return false;
 
-   //if (info_ext->name)
-      //strcpy(cartridge_title, info_ext->name);
-
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    /* Set color depth */
@@ -459,6 +456,9 @@ bool retro_load_game(const struct retro_game_info *info)
    if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
        info_ext->persistent_data)
       persistent_data = true;
+
+   if (info_ext->name)
+      strcpy(cartridge_title, info_ext->name);
 
    if (info->size >= 10 && memcmp(info->data, "ProSystem", 9) == 0)
    {
