@@ -147,7 +147,7 @@ static const struct cartridge_db db_list[] =
       MAPPER_EXRAM
    },
    {
-      "AC03806CEF2558FC795A7D5D8DBA7BC0",
+      "ac03806cef2558fc795a7d5d8dba7bc0",
       "Rampage",
       CARTRIDGE_TYPE_ACTIVISION
    },
@@ -158,21 +158,21 @@ static const struct cartridge_db db_list[] =
       MAPPER_EXRAM_A8
    },
    {
-      "592BE737CE78A17A572D3BBD527C7A61",
+      "592be737ce78a17a572d3bbd527c7a61",
       "Rikki & Vikki (R12)",
       CARTRIDGE_TYPE_SOUPER,
       0,
       AUDIO_BUPCHIP
    },
    {
-      "79D3FB83577CD3FD8D1542F58353CFCD",
+      "79d3fb83577cd3fd8d1542f58353cfcd",
       "Rikki & Vikki (R13)",
       CARTRIDGE_TYPE_SOUPER,
       0,
       AUDIO_BUPCHIP
    },
    {
-      "B3BC889E9CC498636990C5A4D980E85C",
+      "b3bc889e9cc498636990c5a4d980e85c",
       "Rikki & Vikki (R14)",
       CARTRIDGE_TYPE_SOUPER,
       0,
@@ -303,7 +303,7 @@ void database_Load(const char *digest)
 
    for (i = 0; i < len; i++)
    {
-      if (!stricmp(db_list[i].digest, digest))
+      if (!strcmp(db_list[i].digest, digest))
       {
          fixup(i);
          return;
