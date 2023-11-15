@@ -27,7 +27,7 @@
 #include "Mapper.h"
 #include "Memory.h"
 #include "Souper.h"
-#include "Bupchip.h"
+#include "BupChip.h"
 
 
 #define SOUPER_BANK_SEL 0x8000
