@@ -137,11 +137,6 @@ static short sound_Lerp(short a, short b, float t) {
    return (short)floorf((float)a + (float)(b - a) * t + 0.5f);
 }
 
-static void sound_Store(void)
-{
-   audio_batch_cb(mixer_buffer, mixer_outCount);
-}
-
 static void update_input(void)
 {
    unsigned i,j;
@@ -344,21 +339,25 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
+#if 0
    fast_savestates = get_fast_savestates();
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
    //return prosystem_Save((char*)data, fast_savestates);
+#endif
    return false;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
+#if 0
    fast_savestates = get_fast_savestates();
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
    //return prosystem_Load((const char*)data, fast_savestates);
+#endif
    return false;
 }
 
@@ -617,6 +616,5 @@ void retro_run(void)
    }
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
-
-   sound_Store();
+   audio_batch_cb(mixer_buffer, mixer_outCount);
 }
