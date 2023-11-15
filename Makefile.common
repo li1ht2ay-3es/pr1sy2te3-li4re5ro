@@ -24,6 +24,7 @@ SOURCES_C := \
 	$(CORE_DIR)/Linear.c \
 	$(CORE_DIR)/Maria.c \
 	$(CORE_DIR)/Memory.c \
+        $(CORE_DIR)/Mixer.c \
 	$(CORE_DIR)/Palette.c \
 	$(CORE_DIR)/Pokey.c \
 	$(CORE_DIR)/ProSystem.c \
