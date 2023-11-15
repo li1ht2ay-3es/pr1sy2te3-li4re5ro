@@ -42,7 +42,7 @@
 #ifndef TIA_H
 #define TIA_H
 
-#include "mixer.h"
+#include "Mixer.h"
 
 #ifdef __cplusplus
 extern "C" {

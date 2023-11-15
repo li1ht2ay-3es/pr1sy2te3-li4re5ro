@@ -74,7 +74,7 @@
 #define POKEY_SKSTAT 0xf
 
 #include <stdint.h>
-#include "mixer.h"
+#include "Mixer.h"
 
 #ifdef __cplusplus
 extern "C" {
