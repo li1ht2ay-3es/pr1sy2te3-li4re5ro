@@ -682,14 +682,7 @@ WARNINGS :=
 else ifneq (,$(findstring msvc,$(platform)))
 WARNINGS :=
 else
-WARNINGS := -Wall \
-	-Wno-sign-compare \
-	-Wno-unused-variable \
-	-Wno-unused-function \
-	-Wno-uninitialized \
-	-Wno-strict-aliasing \
-	-Wno-overflow \
-	-fno-strict-overflow
+WARNINGS := -Wall -Werror
 endif
 
 FLAGS += -D__LIBRETRO__ $(WARNINGS)
