@@ -50,8 +50,32 @@ extern "C" {
 
 struct retro_core_option_definition option_defs_us[] = {
    {
+      "prosystem_console_region",
+      "Console region (Restart core)",
+      "Machine type.",
+      {
+         { "Auto", NULL },
+         { "NTSC", NULL },
+         { "PAL", NULL },
+         { NULL, NULL },
+      },
+      "Auto"
+   },
+   {
+      "prosystem_aspect_ratio",
+      "Aspect Ratio",
+      "Stretch mode.",
+      {
+         { "Native", NULL },
+         { "PAR", NULL },
+         { "4:3", NULL },
+         { NULL, NULL },
+      },
+      "Native"
+   },
+   {
       "prosystem_color_depth",
-      "Color Depth (Restart)",
+      "Color Depth (Restart core)",
       "Specifies number of colors to display on-screen. 24-bit may increase performance overheads on some platforms.",
       {
          { "16bit", "Thousands (16-bit)" },
@@ -59,6 +83,31 @@ struct retro_core_option_definition option_defs_us[] = {
          { NULL, NULL },
       },
       "16bit"
+   },
+   {
+      "prosystem_aspect_ratio",
+      "Aspect Ratio",
+      "Stretch mode.",
+      {
+         { "Native", NULL },
+         { "PAR", NULL },
+         { "4:3", NULL },
+         { NULL, NULL },
+      },
+      "Native"
+   },
+   {
+      "prosystem_audio_rate",
+      "Audio Rate (Restart core)",
+      "Sound output rate.",
+      {
+         { "48000", NULL },
+         { "96000", NULL },
+         { "192000", NULL },
+         { "384000", NULL },
+         { NULL, NULL },
+      },
+      "48000"
    },
    {
       "prosystem_low_pass_filter",

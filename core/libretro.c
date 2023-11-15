@@ -59,6 +59,10 @@ static int32_t low_pass_prev           = 0; /* Previous sample */
 #define FAST_SAVE_STATE_SIZE           0x30000
 static bool fast_savestates;
 
+static int32_t audio_rate = 48000;
+static int32_t console_region = REGION_AUTO;
+static int32_t display_aspect = 0;
+
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
@@ -236,20 +240,6 @@ void check_variables(bool first_run)
 {
    struct retro_variable var = {0};
 
-   /* Only read colour depth option on first run */
-   if (first_run)
-   {
-      var.key   = "prosystem_color_depth";
-      var.value = NULL;
-
-      /* Set 16bpp by default */
-      videoPixelBytes = 2;
-
-      if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-         if (strcmp(var.value, "24bit") == 0)
-            videoPixelBytes = 4;
-   }
-
    /* Read low pass audio filter settings */
    var.key   = "prosystem_low_pass_filter";
    var.value = NULL;
@@ -277,11 +267,66 @@ void check_variables(bool first_run)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
       if (strcmp(var.value, "enabled") == 0)
          gamepad_dual_stick_hack = true;
+
+
+   var.key   = "prosystem_aspect_ratio";
+   var.value = NULL;
+
+   display_aspect = 0;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "PAR") == 0)
+	     display_aspect = 1;
+
+	  else if (strcmp(var.value, "4:3") == 0)
+	     display_aspect = 2;
+   }
+
+
+   if (!first_run)
+      return;
+
+   /* Only read colour depth option on first run */
+   var.key   = "prosystem_color_depth";
+   var.value = NULL;
+
+   /* Set 16bpp by default */
+   videoPixelBytes = 2;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      if (strcmp(var.value, "24bit") == 0)
+         videoPixelBytes = 4;
+
+
+   var.key   = "prosystem_audio_rate";
+   var.value = NULL;
+
+   audio_rate = 48000;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      audio_rate = atoi(var.value);
+
+
+   var.key   = "prosystem_console_region";
+   var.value = NULL;
+
+   console_region = REGION_AUTO;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "NTSC") == 0)
+	     console_region = REGION_NTSC;
+
+	  else if (strcmp(var.value, "PAL") == 0)
+	     console_region = REGION_PAL;
+   }
 }
 
 /************************************
  * libretro implementation
  ************************************/
+
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -299,12 +344,26 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    memset(info, 0, sizeof(*info));
    info->timing.fps            = (cartridge_region == REGION_NTSC) ? 60 : 50;
-   info->timing.sample_rate    = (cartridge_region == REGION_NTSC) ? 96000 : 96000;
+   info->timing.sample_rate    = audio_rate;
    info->geometry.base_width   = videoWidth;
    info->geometry.base_height  = (cartridge_region == REGION_NTSC) ? 224 : 272;
    info->geometry.max_width    = 320;
    info->geometry.max_height   = 272;
    info->geometry.aspect_ratio = 4.0f / 3.0f;
+}
+
+static void update_geometry(void)
+{
+   struct retro_system_av_info info;
+   retro_get_system_av_info(&info);
+   environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info);
+}
+
+static void update_timing(void)
+{
+   struct retro_system_av_info info;
+   retro_get_system_av_info(&info);
+   environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -486,7 +545,16 @@ bool retro_load_game(const struct retro_game_info *info)
    if (bios_Load(biospath))
       bios_enabled = true;
 
-   prosystem_SetRate(96000);
+   if (console_region != 2)
+   {
+      if (console_region == 0)
+         region_type = REGION_NTSC;
+
+      else if (console_region == 1)
+         region_type = REGION_PAL;
+   }
+
+   prosystem_SetRate(audio_rate);
    prosystem_Reset();
 
    display_ResetPalette();
