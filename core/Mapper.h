@@ -20,36 +20,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * Memory.h
+ * Mapper.h
  * ----------------------------------------------------------------------------
  */
-#ifndef MEMORY_H
-#define MEMORY_H
+#ifndef MAPPER_H
+#define MAPPER_H
 
-#define MEMORY_SIZE 0x10000
-#define MEMORY_EXRAM_SIZE 0x8000
+#include "Cartridge.h"
+#include "Sally.h"
+#include "Maria.h"
 
-#include <stdint.h>
+extern void mapper_Reset(void);
+extern void mapper_Map(void);
+extern void mapper_MapBios(void);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+extern uint8_t mapper_Read(uint16_t address);
+extern void mapper_Write(uint16_t address, uint8_t data);
 
-extern void memory_Reset(void);
-extern void memory_Map(void);
-
-extern uint8_t memory_Read(uint16_t address);
-extern void memory_Write(uint16_t address, uint8_t data);
-
-extern void memory_SaveState(void);
-extern void memory_LoadState(void);
-
-extern uint8_t memory_ram[MEMORY_SIZE];
-extern uint8_t memory_exram[MEMORY_EXRAM_SIZE];
-extern uint32_t memory_exram_size;
-
-#ifdef __cplusplus
-}
-#endif
+extern void mapper_LoadState(void);
+extern void mapper_SaveState(void);
 
 #endif

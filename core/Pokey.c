@@ -115,12 +115,22 @@ static int pot_scanline;
 static int random_scanline_counter;
 static int prev_random_scanline_counter;
 
-static int pokey_count;
 static int pokey_cycles;
-static int16_t pokey_buffer[MAX_SOUND_SAMPLES];
-static int pokey_lowpass[4];
 
-#define POKEY_LOWPASS_LIMIT 32  /* 1.789 MHz @ 55906  (24 = noise)*/
+int16_t pokey_buffer[MAX_SOUND_SAMPLES];
+int pokey_outCount;
+
+static int pokey_lpfCount[4];
+static int pokey_lpfOld[4];
+static int pokey_lpfNew[4];
+
+/* #define POKEY_LOWPASS_LIMIT 1  /* 315/88/2 MHz*/
+/* #define POKEY_LOWPASS_LIMIT 80  /* 1.789 MHz @ 22362 */
+/* #define POKEY_LOWPASS_LIMIT 96  /* 1.789 MHz @ 18635 */
+/* #define POKEY_LOWPASS_LIMIT 112  /* 1.789 MHz @ 15980 */
+#define POKEY_LOWPASS_LIMIT 120  /* 1.789 MHz @ 14914 */
+/* #define POKEY_LOWPASS_LIMIT 128  /* 1.789 MHz @ 13984 */
+int pokey_lowpass_limit = POKEY_LOWPASS_LIMIT;
 
 static void rand_init(uint8_t *rng, uint32_t size, uint32_t left, uint32_t right, uint32_t add)
 {
@@ -172,7 +182,12 @@ static void init_poly17(void)
 
 void pokey_Frame(void)
 {
-   pokey_count = 0;
+   pokey_outCount = 0;
+}
+
+void pokey_SetLowpass(int rate)
+{
+   pokey_lowpass_limit = rate;
 }
 
 void pokey_Reset(void)
@@ -187,13 +202,18 @@ void pokey_Reset(void)
    pokey_poly09Cntr = 0;
    pokey_poly17Cntr = 0;
 
+   for (index = 0; index < MAX_SOUND_SAMPLES; index++)
+      pokey_buffer[index] = 0;
+
    for (index = POKEY_CHANNEL1; index <= POKEY_CHANNEL4; index++)
    {
       pokey_output[index] = 0;
       pokey_audc[index] = 0;
       pokey_audf[index] = 0;
       pokey_filter[index] = (index < 2) ? 1 : 0;
-		pokey_lowpass[index] = 0;
+
+	  //pokey_lowpassCount[index] = 0;
+	  //pokey_lowpassValue[index] = 0;
    }
 
    for (index = 0; index < 8; index++)
@@ -216,6 +236,8 @@ void pokey_Reset(void)
    prev_random_scanline_counter = 0;  
 
    pokey_cycles = 0;
+
+   memset(&pokey_buffer, 0, sizeof(pokey_buffer));
 }
 
 void pokey_Scanline(void)
@@ -226,35 +248,14 @@ void pokey_Scanline(void)
       pot_scanline++;
 }
 
-uint8_t pokey_GetRegister(uint16_t address) 
+uint8_t pokey_Read(uint16_t address) 
 {
    uint8_t data = 0;
-   int index;
 
    address &= 0x0F;
 
    switch (address)
    {
-      case POKEY_POT0:
-      case POKEY_POT1:
-      case POKEY_POT2:
-      case POKEY_POT3:
-      case POKEY_POT4:
-      case POKEY_POT5:
-      case POKEY_POT6:
-      case POKEY_POT7:
-         data = (POT_input[address] <= pot_scanline) ? POT_input[address] : pot_scanline;
-         break;
-
-      case POKEY_ALLPOT:
-         data = 0xFF;
-         for (index = 0; index < 8; index++)
-         {
-            if (POT_input[index] <= pot_scanline)
-               data &= ~(1 << index);  /* reset bit if pot value known */
-         }
-         break;
-
       case POKEY_RANDOM:
       {
          int curr_scanline_counter =  (random_scanline_counter + prosystem_cycles);
@@ -278,26 +279,17 @@ uint8_t pokey_GetRegister(uint16_t address)
          prev_random_scanline_counter = curr_scanline_counter;
          break;
       }
-
-      default:
-         data = 0xFF;  /* debug */
-         break;
    }
 
    return data;
 }
 
-void pokey_SetRegister(uint16_t address, uint8_t value)
+void pokey_Write(uint16_t address, uint8_t value)
 {
    address &= 0x0F;
 
    switch(address)
    {
-      case POKEY_POTGO:
-         if (!(pokey_skctl & 0x04))
-            pot_scanline = 0;   /* slow pot mode */
-         break;
-
       case POKEY_SKCTLS:
          if (pokey_skctl == value) break;  /* no change */
          pokey_skctl = value;
@@ -313,9 +305,6 @@ void pokey_SetRegister(uint16_t address, uint8_t value)
             pokey_poly09Cntr = 0;
             pokey_poly17Cntr = 0;
          }
-
-         if (value & 0x04)
-            pot_scanline = 228; /* fast pot mode - return results immediately */
          break;
 
       case POKEY_AUDF1:
@@ -334,11 +323,6 @@ void pokey_SetRegister(uint16_t address, uint8_t value)
 
       case POKEY_AUDCTL:
          pokey_audctl = value;
-         break;
-
-      default:
-         if (value != 0)  /* debug = uh-oh! */
-            address = 0;
          break;
    }
 }
@@ -439,7 +423,7 @@ static void pokey_Process(void)
    }
 
 
-   for (index = 0; index <= 3; index++)
+   for (index = 0; index < 4; index++)
    {
       int ch = (index + 2) % 4;  /* 3-4-1-2 */
       int joined = (ch < POKEY_CHANNEL3) ? POKEY_CH1_CH2 : POKEY_CH3_CH4;
@@ -482,59 +466,51 @@ static void pokey_Process(void)
       }
    }
 
+
    for (index = 0; index < 4; index++)
-      pokey_lowpass[index] = pokey_output[index] ? pokey_lowpass[index] + 1 : 0;  /* count how many ticks high output */
+   {
+      int newvol = ((pokey_output[index] ^ pokey_filter[index]) || (pokey_audc[index] & POKEY_VOLUME_ONLY)) ? (pokey_audc[index] & POKEY_VOLUME_MASK) : 0;
+
+      pokey_lpfCount[index] = (pokey_lpfNew[index] == newvol) ? pokey_lpfCount[index] + 1 : 0;  /* frequency change */
+      pokey_lpfOld[index] = (pokey_lpfCount[index] >= pokey_lowpass_limit) ? newvol : pokey_lpfOld[index];  /* latch new value */
+      pokey_lpfNew[index] = newvol;
+   }
 }
 
-void pokey_Run(int cycles)
+INLINE void pokey_Run(int cycles)
 {
+   pokey_cycles += cycles;
+   while (pokey_cycles >= 4)  /* Maria 1/4 tick*/
+   {
+      pokey_Process();
+      pokey_cycles -= 4;
+   }
+}
+
+void pokey_Output(void)
+{
+   static int max = 0;
+   int index;
+   int currentValue = 0;
+   int active = 4;
+   int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
+
+
    if (!cartridge_pokey)
       return;
 
 
-   pokey_cycles += cycles;
-   while (pokey_cycles >= 4)  /* Maria 1/4 tick*/
-	{
-      pokey_Process();
-      pokey_cycles -= 4;
-	}
-}
-
-int pokey_Output(void)
-{
-   int index;
-   int currentValue = 0;
-   int active = 4;
-	int adjust[5] = { 0, 0, 0x400*2, 0x300*2, 0x200*2 };  /* 10-bit, 9.5-bit, 9-bit expansion */
-
-
-   if (!cartridge_pokey)
-	{
-      pokey_buffer[pokey_count] = 0;
-      pokey_count++;
-      return 0;
-	}
-
-
    for (index = POKEY_CHANNEL1; index <= POKEY_CHANNEL4; index++)  /* 4x 4-bit unsigned */
-	{
-      if (pokey_lowpass[index] <= POKEY_LOWPASS_LIMIT)  /* ignore very high frequency */
-         continue;
+      currentValue += pokey_lpfOld[index];
 
-      currentValue += ((pokey_output[index] ^ pokey_filter[index]) || (pokey_audc[index] & POKEY_VOLUME_ONLY)) ? (pokey_audc[index] & POKEY_VOLUME_MASK) : 0;
-	}
 
-   active -= (pokey_audctl & POKEY_CH1_CH2) ? 1 : 0;  /* 16-bit channels */
+   active -= (pokey_audctl & POKEY_CH1_CH2) ? 1 : 0;  /* 16-bit joined timer */
    active -= (pokey_audctl & POKEY_CH3_CH4) ? 1 : 0;
 
-   currentValue *= adjust[active];  /* 16-bit signed */
-   pokey_buffer[pokey_count] = currentValue;
-   pokey_count++;
+   currentValue *= adjust[active];  /* 15-bit unsigned */
 
-   return currentValue;
-}
+   max = (max < currentValue) ? currentValue : max;
 
-int16_t *pokey_GetBuffer(void)
-{
-   return pokey_buffer;
+   pokey_buffer[pokey_outCount] = currentValue * 1;
+   pokey_outCount++;
 }

@@ -44,43 +44,30 @@
 
 #include <stdint.h>
 #include <boolean.h>
-//#include <stddef.h>
-
+#include <string.h>
+#include <retro_inline.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int prosystem_frequency;
-extern int prosystem_scanlines;
-extern int prosystem_cycles;
-
 extern void prosystem_Reset();
 extern void prosystem_ExecuteFrame(const uint8_t* input);
 extern void prosystem_Close(bool persistent_data);
 extern void prosystem_SetRate(int rate);
+extern void prosystem_Run(int cycles);
+
+extern bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves);
+extern int prosystem_SaveState(uint8_t *buffer, bool fast_saves);
+
+extern int prosystem_frequency;
+extern int prosystem_scanlines;
+extern int prosystem_cycles;
+extern uint8_t *prosystem_statePtr;
+extern int prosystem_fastsaves;
 
 #ifdef __cplusplus
 }
-#endif
-
-
-
-#if defined(__cplusplus) && defined(_WINDOWS)
-#include <string>
-
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned int uint;
-
-extern bool prosystem_active;
-extern bool prosystem_paused;
-
-extern void prosystem_Pause(bool pause);
-extern byte prosystem_frame;
-
-extern bool prosystem_Save(std::string filename, bool compress);
-extern bool prosystem_Load(std::string filename, bool fast_savestates);
 #endif
 
 #endif

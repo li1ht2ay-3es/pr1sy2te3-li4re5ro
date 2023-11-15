@@ -42,6 +42,9 @@
 
 #define PALETTE_SIZE 768
 
+#define PALETTE_TYPE_NTSC 0
+#define PALETTE_TYPE_PAL 1
+
 #include <stdint.h>
 #include <boolean.h>
 
@@ -49,25 +52,14 @@
 extern "C" {
 #endif
 
-extern void palette_Load(const uint8_t* data);
 extern uint8_t palette_data[PALETTE_SIZE];
 extern bool palette_default;
 
+extern void palette_Load(const uint8_t* data);
+extern void palette_Preset(int preset);
+
 #ifdef __cplusplus
 }
-#endif
-
-
-#ifdef __cplusplus
-#include <String>
-#include "Logger.h"
-
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned int uint;
-
-extern bool palette_Load(std::string filename);
-extern std::string palette_filename;
 #endif
 
 #endif

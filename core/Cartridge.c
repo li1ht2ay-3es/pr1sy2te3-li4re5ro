@@ -29,28 +29,35 @@
 #include "Hash.h"
 #include "Pokey.h"
 #include "BupChip.h"
+#include "Mapper.h"
+#include "Database.h"
 #include <streams/file_stream.h>
-#include <stdlib.h>
-#include <string.h>
 
 char cartridge_digest[33];
-int cartridge_type;
-int cartridge_region;
-int cartridge_pokey;
-int cartridge_controller[2];
-int cartridge_bank;
-int cartridge_flags;
-int cartridge_bupchip;
+char cartridge_title[256];
 
-/* SOUPER-specific stuff, used for "Rikki & Vikki" */
-int cartridge_souper_chr_bank[2];
-int cartridge_souper_mode;
-int cartridge_souper_ram_page_bank[2];
+uint8_t cartridge_type;
+uint8_t cartridge_region;
+uint8_t cartridge_controller[2];
+uint8_t cartridge_bank;
+uint8_t cartridge_flags;
+
+uint8_t cartridge_pokey;
+uint8_t cartridge_ym2151;
+uint8_t cartridge_bupchip;
+
+uint8_t cartridge_bankset;
+uint8_t cartridge_exrom;
+uint8_t cartridge_exfix;
+uint8_t cartridge_exram;
+uint8_t cartridge_exram_m2;
+uint8_t cartridge_exram_x2;
+uint8_t cartridge_exram_a8;
 
 uint8_t* cartridge_buffer      = NULL;
-static uint32_t cartridge_size = 0;
+uint32_t cartridge_size = 0;
 
-uint8_t ex_ram_buffer[0x8000];
+uint8_t exram_buffer[0x8000];
 uint8_t banksets_memory[64*1024];
 
 char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
@@ -105,15 +112,9 @@ bool cartridge_ReadFile(uint8_t** outData, size_t* outSize, const char* subpath,
 
 static bool cartridge_HasHeader(const uint8_t* header)
 {
-   unsigned index;
    const char HEADER_ID[ ] = {"ATARI7800"};
 
-   for (index = 0; index < 9; index++)
-   {
-      if(HEADER_ID[index] != header[index + 1])
-         return false;
-   }
-   return true;
+   return memcmp(HEADER_ID, header+1, 9) == 0;
 }
 
 /* ----------------------------------------------------------------------------
@@ -133,51 +134,6 @@ static bool cartridge_CC2(const uint8_t* header)
    return true;
 }
 
-static uint32_t cartridge_GetBankOffset(uint8_t bank)
-{
-   if (
-         (
-          cartridge_type == CARTRIDGE_TYPE_SUPERCART || 
-          cartridge_type == CARTRIDGE_TYPE_SUPERCART_ROM || 
-          cartridge_type == CARTRIDGE_TYPE_SUPERCART_RAM) && cartridge_size <= 0x10000
-      )
-   {
-      /* for some of these carts, there are only 4 banks. in this case we ignore bit 3
-       * previously, games of this type had to be doubled. The first 4 banks needed to be duplicated at the end of the ROM */
-      return (bank & 3) * 0x4000;
-   }
-
-   return bank * 0x4000;
-}
-
-static void cartridge_WriteBank(uint16_t address, uint8_t bank)
-{
-  uint32_t offset = cartridge_GetBankOffset(bank);
-
-  if (offset < cartridge_size)
-  {
-    memory_WriteROM(address, 0x4000, cartridge_buffer + offset);
-    cartridge_bank = bank;
-  }
-}
-
-static void cartridge_souper_StoreChrBank(uint8_t page, uint8_t bank)
-{
-   if (page < 2)
-      cartridge_souper_chr_bank[page] = bank;
-}
-
-static void cartridge_souper_SetMode(uint8_t data)
-{
-   cartridge_souper_mode = data;
-}
-
-static void cartridge_souper_SetRamPageBank(uint8_t which, uint8_t data)
-{
-   if (which < 2)
-      cartridge_souper_ram_page_bank[which] = data & 7;
-}
-
 static void cartridge_ReadHeader(const uint8_t* header)
 {
    uint16_t cardtype;
@@ -187,54 +143,56 @@ static void cartridge_ReadHeader(const uint8_t* header)
    cartridge_size |= header[51] << 8;
    cartridge_size |= header[52];
 
-/*
-   -------------------------------------------------------
-   A78 Card Type is a 16-bit word at header offset 53+54
-   -------------------------------------------------------
-   bit 0     = pokey at $4000
-   bit 1     = supergame bank switched
-   bit 2     = ram at $4000
-   bit 3     = rom at $4000
-    
-   bit 4     = second to last bank at $4000
-   bit 5     = banked ram
-   bit 6     = pokey at $450
-   bit 7     = mirror ram at $4000
-  
-   bit 8     = activision banking
-   bit 9     = absolute banking
-   bit 10    = pokey at $440
-   bit 11    = ym2151 at $460/$461
-    
-   bit 12    = souper
-   bit 13    = banksets
-   bit 14    = halt banked ram
-   bit 15    = pokey at $800
-*/
 
    cardtype = (header[53] << 8) | header[54];
 
-   cartridge_type = (cartridge_size <= 0x10000) ? CARTRIDGE_TYPE_NORMAL : CARTRIDGE_TYPE_SUPERCART;
+   if (cardtype & 0x0001)  /* pokey 1 */
+      cartridge_pokey = POKEY_AT_4000;
 
-   if(cardtype & 0x0002) cartridge_type  = CARTRIDGE_TYPE_SUPERCART;
-   if(cardtype & 0x0004) cartridge_type  = ((cardtype & 0x0002) ? CARTRIDGE_TYPE_SUPERCART_RAM : CARTRIDGE_TYPE_FLAT_WITH_RAM);
-   if(cardtype & 0x0008) cartridge_type  = CARTRIDGE_TYPE_SUPERCART_LARGE;
-   if(cardtype & 0x0010) cartridge_type  = CARTRIDGE_TYPE_SUPERCART_ROM;
-   if(cardtype & 0x0020) cartridge_type  = CARTRIDGE_TYPE_SUPERCART_RAMX2;
-   if(cardtype & 0x0100) cartridge_type  = CARTRIDGE_TYPE_ACTIVISION;
-   if(cardtype & 0x0200) cartridge_type  = CARTRIDGE_TYPE_ABSOLUTE;
-   if(cardtype & 0x1000) cartridge_type  = CARTRIDGE_TYPE_SOUPER;
-   if(cardtype & 0x2000)  /* Banksets */
-   {
-      cartridge_type = CARTRIDGE_TYPE_BANKSETS;                                   /* Default to Banksets (no RAM) */
-      if(cardtype & 0x0004) cartridge_type  = CARTRIDGE_TYPE_BANKSETS_RAM;        /* RAM @ 4000 enabled */
-      if(cardtype & 0x4000) cartridge_type  = CARTRIDGE_TYPE_BANKSETS_HALTRAM;    /* Banked Halt RAM @ 4000 enabled */
-   }
+   if (cardtype & 0x0002)  /* paging rom */
+      cartridge_type = CARTRIDGE_TYPE_SUPERGAME;
 
-   cartridge_pokey = POKEY_NONE;
-   if(cardtype & 0x0001) cartridge_pokey = POKEY_AT_4000;
-   if(cardtype & 0x0040) cartridge_pokey = POKEY_AT_450;
-   if(cardtype & 0x8000) cartridge_pokey = POKEY_AT_800;
+   if (cardtype & 0x0004)  /* 16 KB ram */
+      cartridge_exram = 1;
+
+   if (cardtype & 0x0008)  /* 16 KB rom */
+      cartridge_exrom = 1;
+
+   if (cardtype & 0x0010)  /* last bank - 1 */
+      cartridge_exfix = 1;
+
+   if (cardtype & 0x0020)  /* paging ram */
+      cartridge_exram_x2 = 1;
+
+   if (cardtype & 0x0040)  /* pokey 1 */
+      cartridge_pokey = POKEY_AT_450;
+
+   if (cardtype & 0x0080)  /* 2KB mirror ram */
+      cartridge_exram_a8 = 1;
+
+   if (cardtype & 0x0100)
+      cartridge_type = CARTRIDGE_TYPE_ACTIVISION;
+
+   if (cardtype & 0x0200)
+      cartridge_type = CARTRIDGE_TYPE_ABSOLUTE;
+
+   if (cardtype & 0x0400)  /* pokey 2 */
+      cartridge_pokey = POKEY_AT_440;
+
+   if (cardtype & 0x0800)
+      cartridge_ym2151 = 1;
+
+   if (cardtype & 0x1000)
+      cartridge_type = CARTRIDGE_TYPE_SOUPER;
+
+   if (cardtype & 0x2000)  /* halt rom */
+      cartridge_bankset = 1;
+
+   if (cardtype & 0x4000)  /* halt ram */
+      cartridge_exram_m2 = 1;
+
+   if (cardtype & 0x8000)  /* pokey 1 */
+      cartridge_pokey = POKEY_AT_800;
 
 /*
     // ========================
@@ -389,7 +347,6 @@ bool cartridge_LoadFromCDF(const char* data, size_t size,
 
 bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
 {
-   int index;
    uint32_t offset     = 0;
    uint8_t header[128] = {0};
 
@@ -397,12 +354,27 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
    if(size <= 128)
       return false;
 
-   for(index = 0; index < 128; index++)
-      header[index] = data[index];
+   memcpy(header, data, 128);
 
    /* Prosystem doesn't support CC2 hacks. */
    if (cartridge_CC2(header))
       return false;
+
+
+   cartridge_type = 0;
+   cartridge_bupchip = 0;
+   cartridge_pokey = POKEY_NONE;
+   cartridge_ym2151 = 0;
+
+   cartridge_bankset = 0;
+   cartridge_exrom = 0;
+   cartridge_exfix = 0;
+   cartridge_exram = 0;
+   cartridge_exram_m2 = 0;
+   cartridge_exram_x2 = 0;
+   cartridge_exram_a8 = 0;
+   cartridge_region = 0;
+
 
    if(cartridge_HasHeader(header))
    {
@@ -418,278 +390,40 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
    {
       cartridge_buffer = (uint8_t*)malloc(cartridge_size * sizeof(uint8_t));
 
-      for(index = 0; index < cartridge_size; index++)
-         cartridge_buffer[index] = data[index + offset];
+      memcpy(cartridge_buffer, data + offset, cartridge_size);
    }
 
    hash_Compute(cartridge_digest, cartridge_buffer, cartridge_size);
 
+   if (offset == 0)
+      database_Load(cartridge_digest);
+
    return true;
 }
 
-/*
-------------------------------------------------------------------------------------------
-Here are the main 7800 Bankswitching schemes (ignoring Absolute, Activistion and Fractalus):
-
-NORMAL           Anything 48K or less... fits into memory (0xffff downwards) without switching.
-SUPERCART        Games that are 128+K in size with nothing mapped in at 0x4000
-SUPERCART_LARGE  Games that are 144+K in size with the extra 16K bank 0 fixed at 0x4000
-SUPERCART_RAM    Games that are 128+K in size with extra 16K of RAM at 0x4000
-SUPERCART_ROM    Games that are 128+K in size with the second-to-last bank fixed at 0x4000
-
-For the "Super Carts" the 16K at 0xC000 is the last bank in the ROM.
-For the "Super Carts" the 16K at 0x8000 is the bankswapping bank and is switched by writing
-the bank # to any address in that region.  For Supercart "Large" there are actually two
-chips (16K fixed and 128K bankswapped) and the bank is relative to the 128K chip so emulators
-will use (bank+1) to compensate for the extra 16K fixed bank 0 at 0x4000.
-
-In theory, since we can write any bank number 0-255 that would allow up to 255 banks of 16k
-which is a whopping 4096K (4 Megabytes) of ROM but in practice carts seem to limit to 512K
-or less for practical reasons with a few outstanding tech-demos reaching 1024K. 
-------------------------------------------------------------------------------------------
-*/
-
-void cartridge_Store(void)
+void cartridge_Reset(void)
 {
-   uint32_t offset, lastBank, codesize;
-
-   switch(cartridge_type)
-   {
-      case CARTRIDGE_TYPE_NORMAL:
-         memory_WriteROM(0x10000 - cartridge_size, cartridge_size, cartridge_buffer);
-         break;
-
-      case CARTRIDGE_TYPE_FLAT_WITH_RAM:
-         memory_WriteROM(0x10000 - cartridge_size, cartridge_size, cartridge_buffer);
-         memory_ClearROM(0x4000, 0x4000);
-         break;
-          
-      case CARTRIDGE_TYPE_SUPERCART:
-         offset = cartridge_size - 0x4000;
-         memory_WriteROM(0xc000, 0x4000, cartridge_buffer + offset);
-
-      case CARTRIDGE_TYPE_SUPERCART_LARGE:
-         offset = cartridge_size - 0x4000;
-         memory_WriteROM(0xc000, 0x4000, cartridge_buffer + offset);
-         memory_WriteROM(0x4000, 0x4000, cartridge_buffer + cartridge_GetBankOffset(0));
-         break;
-
-      case CARTRIDGE_TYPE_SUPERCART_RAM:
-         offset = cartridge_size - 0x4000;
-         memory_WriteROM(0xc000, 16384, cartridge_buffer + offset);
-         memory_ClearROM(0x4000, 0x4000);
-         break;
-
-      case CARTRIDGE_TYPE_SUPERCART_RAMX2:
-         offset = cartridge_size - 0x4000;
-         memory_WriteROM(0xc000, 0x4000, cartridge_buffer + offset);
-         memory_ClearROM(0x4000, 0x4000);
-         break;          
-          
-      case CARTRIDGE_TYPE_SUPERCART_ROM:
-         offset = cartridge_size - 0x4000;
-         lastBank = (cartridge_size/0x4000)-1;
-         memory_WriteROM(0xc000, 0x4000, cartridge_buffer + offset);        
-         memory_WriteROM(0x4000, 0x4000, cartridge_buffer + cartridge_GetBankOffset(lastBank-1));
-         break;
-
-      case CARTRIDGE_TYPE_ABSOLUTE:
-         memory_WriteROM(0x4000, 0x4000, cartridge_buffer);
-         memory_WriteROM(0x8000, 0x8000, cartridge_buffer + cartridge_GetBankOffset(2));
-         break;
-
-      case CARTRIDGE_TYPE_ACTIVISION:
-         memory_WriteROM(0xa000, 0x4000, cartridge_buffer);
-         memory_WriteROM(0x4000, 0x2000, cartridge_buffer + 0x1a000);
-         memory_WriteROM(0x6000, 0x2000, cartridge_buffer + 0x18000);
-         memory_WriteROM(0x8000, 0x2000, cartridge_buffer + 0x1e000);
-         memory_WriteROM(0xe000, 0x2000, cartridge_buffer + 0x1c000);
-         break;
-
-      case CARTRIDGE_TYPE_SOUPER:
-         memory_WriteROM(0xc000, 0x4000, cartridge_buffer + cartridge_GetBankOffset(31));
-         memory_WriteROM(0x8000, 0x4000, cartridge_buffer + cartridge_GetBankOffset(0));
-         memory_ClearROM(0x4000, 0x4000);
-         break;
-
-      case CARTRIDGE_TYPE_FRACTALUS:
-         memory_WriteROM(0x10000 - cartridge_size, cartridge_size, cartridge_buffer);
-         memory_ClearROM(0x4000, 0x4000);
-         break;
-          
-      case CARTRIDGE_TYPE_BANKSETS:
-         codesize = cartridge_size / 2;
-         if (codesize <= (52 * 1024))
-         {
-            offset = 0;
-            memory_WriteROM(0x10000 - codesize, codesize, cartridge_buffer + offset);
-
-            memcpy(&banksets_memory[0x10000 - codesize], cartridge_buffer + codesize, codesize);
-            if (codesize >= (48*1024))
-               cartridge_pokey = POKEY_AT_4000_W;
-         }
-         else
-         {
-            offset = codesize - 0x4000;
-            memory_WriteROM(0xc000, 0x4000, cartridge_buffer + offset);
-            memcpy(&banksets_memory[0xc000], &cartridge_buffer[cartridge_size - 0x4000], 0x4000);
-         }
-         break;
-          
-      case CARTRIDGE_TYPE_BANKSETS_RAM:
-      case CARTRIDGE_TYPE_BANKSETS_HALTRAM:
-         codesize = cartridge_size / 2;
-         if (codesize <= (52 * 1024))
-         {
-            memory_WriteROM(0x10000 - codesize, codesize, cartridge_buffer);
-            memcpy(&banksets_memory[0x10000 - codesize], cartridge_buffer + codesize, codesize);
-            if (codesize >= (48*1024))
-               cartridge_pokey = POKEY_AT_4000_W;
-         }
-         else
-         {
-            memory_WriteROM(0xc000, 0x4000, cartridge_buffer + codesize - 0x4000);
-            memcpy(&banksets_memory[0xc000], cartridge_buffer + cartridge_size - 0x4000, 0x4000);
-         }
-         memory_ClearROM(0x4000, 0x4000);
-         memset(&banksets_memory[0x4000], 0x00, 0x4000);
-         break;
-   }
+   mapper_Reset();
 }
 
-void cartridge_Write(uint16_t address, uint8_t data)
+INLINE void cartridge_MapBios(void)
 {
-   uint32_t offset;
-
-   switch(cartridge_type)
-   {
-      case CARTRIDGE_TYPE_SUPERCART:
-      case CARTRIDGE_TYPE_SUPERCART_RAM:
-      case CARTRIDGE_TYPE_SUPERCART_ROM:
-      case CARTRIDGE_TYPE_SUPERCART_RAMX2:
-         if ((address & 0xC000) == 0x8000) // Is this a bankswitching write?
-            cartridge_StoreBank(data);
-
-         else if (address == 0xFFFF)
-            0; //cartridge_SwapRAM_DragonFlyStyle(data); // For the Dragonfly way of RAM banking
-         break;
-
-      case CARTRIDGE_TYPE_SUPERCART_LARGE:
-         if(address >= 0x8000 && address < 0xc000 && data < 9)
-            cartridge_StoreBank(data + 1);
-         break;
-
-      case CARTRIDGE_TYPE_ABSOLUTE:
-         if(address == 0x8000 && (data == 1 || data == 2))
-            cartridge_StoreBank(data - 1);
-         break;
-
-      case CARTRIDGE_TYPE_ACTIVISION:
-         if(address >= 0xff80)
-            cartridge_StoreBank(address & 7);
-         break;
-
-      case CARTRIDGE_TYPE_SOUPER:
-         if(address >= 0x4000 && address < 0x8000)
-         {
-            memory_souper_ram[memory_souper_GetRamAddress(address)] = data;
-            break;
-         }
-
-         switch(address)
-         {
-            case CARTRIDGE_SOUPER_BANK_SEL:
-               cartridge_StoreBank(data & 31);
-               break;
-
-            case CARTRIDGE_SOUPER_CHR_A_SEL:
-               cartridge_souper_StoreChrBank(0, data);
-               break;
-
-            case CARTRIDGE_SOUPER_CHR_B_SEL:
-               cartridge_souper_StoreChrBank(1, data);
-               break;
-
-            case CARTRIDGE_SOUPER_MODE_SEL:
-               cartridge_souper_SetMode(data);
-               break;
-
-            case CARTRIDGE_SOUPER_EXRAM_V_SEL:
-               cartridge_souper_SetRamPageBank(0, data);
-               break;
-
-            case CARTRIDGE_SOUPER_EXRAM_D_SEL:
-               cartridge_souper_SetRamPageBank(1, data);
-               break;
-
-            case CARTRIDGE_SOUPER_AUDIO_CMD:
-               bupchip_ProcessAudioCommand(data);
-               break;
-         }
-         break;
-
-      case CARTRIDGE_TYPE_BANKSETS:
-      case CARTRIDGE_TYPE_BANKSETS_RAM:
-         if ((address & 0xc000) == 0x8000) // Is this a bankswitching write?
-         {
-            // We need to swap in the main Sally memory...
-            cartridge_StoreBank(data);
-
-			// And also swap in the Maria memory... this ROM starts half-way up the main cartridge_buffer[]
-            offset = (cartridge_size/2) + (data*0x4000);
-            memcpy(&banksets_memory[0x8000], &cartridge_buffer[offset], 0x4000);
-         }
-         break;
-          
-      case CARTRIDGE_TYPE_BANKSETS_HALTRAM:
-         if ((address & 0xc000) == 0x8000) // Is this a bankswitching write?
-         {
-            // We need to swap in the main Sally memory...
-            cartridge_StoreBank(data);
-
-            // And also swap in the Maria memory... this ROM starts half-way up the main cartridge_buffer[]
-            offset = (cartridge_size/2) + (data*0x4000);
-            memcpy(&banksets_memory[0x8000], &cartridge_buffer[offset], 0x4000);
-         }
-         else if ((address & 0xc000) == 0xc000) // Are we writing to MARIA HALT RAM?
-         {
-            // Write the data into the 0x4000-0x7FFF region - for Sally, this is write only but will be seen by Maria
-            banksets_memory[0x4000 + (address & 0x3FFF)] = data;
-         }
-         break;
-   }
+   mapper_MapBios();
 }
 
-void cartridge_StoreBank(uint8_t bank)
+INLINE void cartridge_Map(void)
 {
-   switch(cartridge_type)
-   {
-      case CARTRIDGE_TYPE_SUPERCART:
-      case CARTRIDGE_TYPE_SUPERCART_RAM:
-      case CARTRIDGE_TYPE_SUPERCART_ROM:
-      case CARTRIDGE_TYPE_SUPERCART_RAMX2:
-      case CARTRIDGE_TYPE_SUPERCART_LARGE:
-         cartridge_WriteBank(0x8000, bank);
-         break;
+   mapper_Map();
+}
 
-      case CARTRIDGE_TYPE_ABSOLUTE:
-         cartridge_WriteBank(0x4000, bank);
-         break;
+INLINE uint8_t cartridge_Read(uint16_t address)
+{
+   return mapper_Read(address);
+}
 
-      case CARTRIDGE_TYPE_ACTIVISION:
-         cartridge_WriteBank(0xa000, bank);
-         break;
-
-      case CARTRIDGE_TYPE_SOUPER:
-         cartridge_WriteBank(0x8000, bank);
-         break;
-
-      case CARTRIDGE_TYPE_BANKSETS:
-      case CARTRIDGE_TYPE_BANKSETS_RAM:
-      case CARTRIDGE_TYPE_BANKSETS_HALTRAM:
-         cartridge_WriteBank(0x8000, bank);
-         break;
-   }
+INLINE void cartridge_Write(uint16_t address, uint8_t data)
+{
+   mapper_Write(address, data);
 }
 
 bool cartridge_IsLoaded(void)
@@ -706,4 +440,26 @@ void cartridge_Release(bool persistent_data)
    }
    cartridge_buffer = NULL;
    cartridge_size   = 0;
+}
+
+INLINE void cartridge_Run(int cycles)
+{
+   if (cartridge_pokey)
+      pokey_Run(cycles);
+}
+
+INLINE void cartridge_ScanlineEnd(void)
+{
+   if (cartridge_bupchip)
+      bupchip_ScanlineEnd();
+}
+
+void cartridge_LoadState(void)
+{
+   mapper_LoadState();
+}
+
+void cartridge_SaveState(void)
+{
+   mapper_SaveState();
 }

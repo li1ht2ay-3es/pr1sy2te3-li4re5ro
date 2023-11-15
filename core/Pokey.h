@@ -74,20 +74,23 @@
 #define POKEY_SKSTAT 0xf
 
 #include <stdint.h>
+#include "mixer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern int16_t pokey_buffer[MAX_SOUND_SAMPLES];
+extern int pokey_outCount;
+
 extern void pokey_Reset(void);
-extern uint8_t pokey_GetRegister(uint16_t address);
-extern void pokey_SetRegister(uint16_t address, uint8_t value);
-extern void pokey_SetSampleRate(int rate);
+extern uint8_t pokey_Read(uint16_t address);
+extern void pokey_Write(uint16_t address, uint8_t value);
+
 extern void pokey_Frame(void);
-extern int pokey_Output(void);
-extern void pokey_Scanline(void);
 extern void pokey_Run(int cycles);
-extern int16_t *pokey_GetBuffer(void);
+extern void pokey_Scanline(void);
+extern void pokey_Output(void);
 
 #ifdef __cplusplus
 }

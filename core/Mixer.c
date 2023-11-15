@@ -45,15 +45,21 @@
 #include "BupChip.h"
 #include "Maria.h"
 
-static int16_t mixer_buffer[MAX_SOUND_SAMPLES] = {0};
-static int mixer_rate = 48000;
+int mixer_rate = 48000;
 
-int mixer_count = 0;
+int16_t mixer_buffer[MAX_SOUND_SAMPLES] = {0};
+int mixer_outCount = 0;
 
 static int mixer_cycles = 0;
 static int mixer_cycles2 = 0;
 static int mixer_tick = 0;
 static int mixer_tick2 = 0;
+
+static int mixer_volume = 100;
+static int tia_volume = 100;
+static int pokey_volume = 100;
+static int bupchip_volume = 100;
+static int xm_volume = 100;
 
 void mixer_Reset(void)
 {
@@ -61,11 +67,9 @@ void mixer_Reset(void)
    mixer_cycles2 = 0;
 }
 
-void mixer_SetRate(int rate)
+void mixer_SetRate()
 {
    int clock = CYCLES_PER_SCANLINE * prosystem_scanlines * prosystem_frequency;
-
-   mixer_rate = rate;
 
    mixer_tick  = clock / mixer_rate;
    mixer_tick2 = clock % mixer_rate;
@@ -73,7 +77,7 @@ void mixer_SetRate(int rate)
 
 void mixer_Frame(void)
 {
-   mixer_count = 0;
+   mixer_outCount = 0;
 }
 
 void mixer_Run(int cycles)
@@ -88,10 +92,11 @@ void mixer_Run(int cycles)
       }
 
 
-      tia_Output();
+      //tia_Output();
       pokey_Output();
-      bupchip_Output();
-      mixer_count++;
+      //bupchip_Output();
+
+      mixer_outCount++;
 
 
       mixer_cycles -= mixer_tick;
@@ -104,23 +109,11 @@ void mixer_Run(int cycles)
 	}
 }
 
-int mixer_GetCount(void)
-{
-   return mixer_count;
-}
-
-int16_t *mixer_GetBuffer(void)
-{
-   return mixer_buffer;
-}
-
 void mixer_FrameEnd(void)
 {
    int left, right;
    int index;
-   int16_t *tia_buffer = tia_GetBuffer();
-   int16_t *pokey_buffer = pokey_GetBuffer();
-   int16_t *bupchip_buffer = bupchip_GetBuffer();
+
 
    /* Single-pole low-pass filter (6 dB/octave) */
    static int lowpass_output = 0;
@@ -128,14 +121,22 @@ void mixer_FrameEnd(void)
    int factor_b = 0x10000 - factor_a;
 
 
-   for( index = 0; index < mixer_count; index += 2 )
+   for (index = 0; index < tia_outCount; index += 2)
    {
-      left = tia_buffer[index];
-      left += pokey_buffer[index];
-      right = left;
+      left = (tia_buffer[index] * tia_volume) / 100;
 
-      left += bupchip_buffer[index*2 + 0];
-      right += bupchip_buffer[index*2 + 1];
+      if (cartridge_pokey)
+         left += (pokey_buffer[index] * pokey_volume) / 100;
+
+      right = left;  /* mono expand */
+
+
+      if (cartridge_bupchip)
+	  {
+         left += (bupchip_buffer[index*2 + 0] * bupchip_volume) / 100;  /* stereo */
+         right += (bupchip_buffer[index*2 + 1] * bupchip_volume) / 100;
+	  }
+
 
       left = (left > 0x7FFF) ? 0x7FFF : left;
       right = (right > 0x7FFF) ? 0x7FFF : right;
@@ -149,4 +150,6 @@ void mixer_FrameEnd(void)
       mixer_buffer[index*2 + 0] = left;
       mixer_buffer[index*2 + 1] = right;
    }
+
+   index = 0;
 }

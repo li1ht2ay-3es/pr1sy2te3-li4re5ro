@@ -139,10 +139,7 @@ static short sound_Lerp(short a, short b, float t) {
 
 static void sound_Store(void)
 {
-   int16_t *audioOutBuffer = mixer_GetBuffer();
-   int audio_size = mixer_GetCount();
-
-   audio_batch_cb(audioOutBuffer, audio_size);
+   audio_batch_cb(mixer_buffer, mixer_outCount);
 }
 
 static void update_input(void)
@@ -312,7 +309,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.base_height  = (cartridge_region == REGION_NTSC) ? 224 : 272;
    info->geometry.max_width    = 320;
    info->geometry.max_height   = 272;
-   info->geometry.aspect_ratio = 4.0 / 3.0;
+   info->geometry.aspect_ratio = 4.0f / 3.0f;
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -415,6 +412,8 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!info)
       return false;
 
+   strcpy(cartridge_title, info_ext->name);
+
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    /* Set color depth */
@@ -481,8 +480,6 @@ bool retro_load_game(const struct retro_game_info *info)
    else if (!cartridge_Load(persistent_data,
             (const uint8_t*)info->data, info->size))
       return false;
-
-   //database_Load(cartridge_digest);
 
    environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
 

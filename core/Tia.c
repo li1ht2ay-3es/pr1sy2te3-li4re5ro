@@ -39,10 +39,13 @@
  * Tia.c
  * ----------------------------------------------------------------------------
  */
+#include "ProSystem.h"
 #include "Tia.h"
 #include "Maria.h"
 #include "Mixer.h"
-#include "ProSystem.h"
+#include "Bios.h"
+#include "Cartridge.h"
+#include "Memory.h"
 
 #define TIA_POLY4_SIZE 15
 #define TIA_POLY5_SIZE 31
@@ -53,110 +56,87 @@ static const uint8_t TIA_POLY5[ ] = {0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0,1,1,1
 static const uint8_t TIA_POLY9[ ] = {0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,1,1,1,0,0,1,1,0,1,1,0,1,0,1,1,1,0,1,1,0,0,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,1,1,1,1,0,1,0,1,1,0,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,1,0,0,0,1,1,1,0,0,1,1,0,1,1,0,0,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,1,1,1,0,0,1,0,0,0,1,1,1,0,0,1,1,0,1,0,1,1,0,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,0,1,1,1,1,0,1,1,0,0,0,0,1,1,1,1,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,0,0,0,0,0,0,0,0,1,0,1,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1,1,1,1,0,0,0,1,1,1,0,0,0,1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,0,1,0,1,1,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,1,1,0,0,0,1,0,1,0,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1,0,0,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,1,1,0,1,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,1,0,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,1,1,0,1,1,1,0,0,0,1,0,1,0,0,1,0,1,0,1,0,1,1,1,0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0};
 static const uint8_t TIA_DIV31[ ] = {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0};
 
-uint8_t tia_volume[2] = {0};
-uint8_t tia_counterMax[2] = {0};
-uint8_t tia_counter[2] = {0};
-uint8_t tia_audc[2] = {0};
-uint8_t tia_audf[2] = {0};
-uint8_t tia_audv[2] = {0};
-int tia_poly4Cntr[2] = {0};
-int tia_poly5Cntr[2] = {0};
-int tia_poly9Cntr[2] = {0};
+#define tia_audc (memory_ram+AUDC0)
+#define tia_audf (memory_ram+AUDF0)
+#define tia_audv (memory_ram+AUDV0)
 
-static int tia_count;
-static int tia_cycles;
-static int16_t tia_buffer[MAX_SOUND_SAMPLES];
+struct
+{
+   uint8_t volume[2];
+   uint8_t counter[2];
+   uint8_t counterMax[2];
+
+   uint8_t poly4Cntr[2];
+   uint8_t poly5Cntr[2];
+   uint16_t poly9Cntr[2];
+} tia_s;
+
+static const int TIA_CYCLES = CYCLES_PER_SCANLINE / 2;  /* Maria x 1/227 ~ 1/2 scanline */
+
+static int out_tick;
+static int out_tick2;
+static int out_rate;
+static int out_clock;
+static int out_clock2;
+
+int16_t tia_buffer[MAX_SOUND_SAMPLES];
+int tia_outCount;
 
 
 static void tia_ProcessChannel(uint8_t channel)
 {
-   tia_poly5Cntr[channel] = (tia_poly5Cntr[channel] + 1) % TIA_POLY5_SIZE;
+   tia_s.poly5Cntr[channel] = (tia_s.poly5Cntr[channel] + 1) % TIA_POLY5_SIZE;
 
    if( ((tia_audc[channel] & 2) == 0) ||
-       ( ((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_poly5Cntr[channel]] ) ||
-       ( ((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_poly5Cntr[channel]] )
+       ( ((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_s.poly5Cntr[channel]] ) ||
+       ( ((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_s.poly5Cntr[channel]] )
      )
    {
       if (tia_audc[channel] & 4)
-         tia_volume[channel] = (!tia_volume[channel]) ? tia_audv[channel]: 0;
+         tia_s.volume[channel] = (!tia_s.volume[channel]) ? tia_audv[channel]: 0;
 
       else if (tia_audc[channel] & 8)
       {
          if (tia_audc[channel] == 8)
          {
-            tia_poly9Cntr[channel] = (tia_poly9Cntr[channel]+1) % TIA_POLY9_SIZE;
-            tia_volume[channel] = (TIA_POLY9[tia_poly9Cntr[channel]]) ? tia_audv[channel]: 0;
+            tia_s.poly9Cntr[channel] = (tia_s.poly9Cntr[channel]+1) % TIA_POLY9_SIZE;
+            tia_s.volume[channel] = (TIA_POLY9[tia_s.poly9Cntr[channel]]) ? tia_audv[channel]: 0;
          }
 
          else
-            tia_volume[channel] = (TIA_POLY5[tia_poly5Cntr[channel]]) ? tia_audv[channel]: 0;
+            tia_s.volume[channel] = (TIA_POLY5[tia_s.poly5Cntr[channel]]) ? tia_audv[channel]: 0;
       }
 
       else
       {
-         tia_poly4Cntr[channel] = (tia_poly4Cntr[channel] + 1) % TIA_POLY4_SIZE;
-         tia_volume[channel] = (TIA_POLY4[tia_poly4Cntr[channel]]) ? tia_audv[channel]: 0;
+         tia_s.poly4Cntr[channel] = (tia_s.poly4Cntr[channel] + 1) % TIA_POLY4_SIZE;
+         tia_s.volume[channel] = (TIA_POLY4[tia_s.poly4Cntr[channel]]) ? tia_audv[channel]: 0;
       }
    }
 }
 
 void tia_Frame(void)
 {
-   tia_count = 0;
+   tia_outCount = 0;
 }
 
 void tia_Reset(void)
 {
-   int index;
+   memset(&tia_s, 0, sizeof(tia_s));
+   memset(&tia_buffer, 0, sizeof(tia_buffer));
 
-   for (index = 0; index < 2; index++)
-   {
-      tia_volume[index] = 0;
-      tia_counterMax[index] = 0;
-      tia_counter[index] = 0;
-      tia_audc[index] = 0;
-      tia_audf[index] = 0;
-      tia_audv[index] = 0;
-      tia_poly4Cntr[index] = 0;
-      tia_poly5Cntr[index] = 0;
-      tia_poly9Cntr[index] = 0;
-   }
-
-   tia_cycles = 0;
+   out_clock = 0;
 }
 
-void tia_Write(uint16_t address, uint8_t data)
+static void update_channel(int channel)
 {
    uint8_t frequency;
-   uint8_t channel = (address + 1) & 1;
-
-   switch (address)
-   {
-      case AUDC0:  /* Audio control */
-      case AUDC1:
-         tia_audc[channel] = data & 0x0F;
-         break;
-
-      case AUDF0:  /* Audio frequency */
-      case AUDF1:
-         tia_audf[channel] = data & 0x1F;
-         break;
-
-      case AUDV0:  /* Audio volume */
-      case AUDV1:
-         tia_audv[channel] = data & 0x0F;
-         break;
-
-      default:  /* Unmapped */
-         return;
-   }
-
 
    if (tia_audc[channel] == 0)  /* can update faster than 31400 counter (several times per frame) */
    {
       frequency = 0;
 
-      tia_volume[channel] = tia_audv[channel];
+      tia_s.volume[channel] = tia_audv[channel];
    }
 
    else
@@ -168,59 +148,152 @@ void tia_Write(uint16_t address, uint8_t data)
    }
 
 
-   if (frequency != tia_counterMax[channel])
+   if (frequency != tia_s.counterMax[channel])
    {
-      tia_counterMax[channel] = frequency;
+      tia_s.counterMax[channel] = frequency;
 
-      if (tia_counter[channel] == 0 || frequency == 0)
-         tia_counter[channel] = frequency;
+      if (tia_s.counter[channel] == 0 || frequency == 0)
+         tia_s.counter[channel] = frequency;
    }
 }
 
-static void tia_Process()
+INLINE uint8_t tia_Read(uint16_t address)
 {
-   if (tia_counter[0] > 1)
-      tia_counter[0]--;
-
-   else if (tia_counter[0] == 1)
+   switch(address)
    {
-      tia_counter[0] = tia_counterMax[0];
-      tia_ProcessChannel(0);
+   case INPT0:
+   case INPT1:
+   case INPT2:
+   case INPT3:
+   case INPT4:
+   case INPT5:
+      return memory_ram[address];
    }
 
+   return address & 0xff;  /* Open bus? */
+}
 
-   if (tia_counter[1] > 1)
-      tia_counter[1]--;
+INLINE void tia_Write(uint16_t address, uint8_t data)
+{
+   uint8_t channel = (address + 1) & 1;
 
-   else if (tia_counter[1] == 1)
+   switch (address)
    {
-      tia_counter[1] = tia_counterMax[1];
-      tia_ProcessChannel(1);
+   case INPTCTRL:
+      if (bios_enabled)
+	  {
+         if (data == 22 && bios_IsMapped())
+            cartridge_MapBios();
+
+         else if (data == 2 && !bios_IsMapped())
+            bios_Map();
+	  }
+      break;
+
+   case AUDC0:
+   case AUDC1:
+      tia_audc[channel] = data & 0x0F;
+      update_channel(channel);
+      break;
+
+   case AUDF0:
+   case AUDF1:
+      tia_audf[channel] = data & 0x1F;
+      update_channel(channel);
+      break;
+
+   case AUDV0:
+   case AUDV1:
+      tia_audv[channel] = data & 0x0F;
+      update_channel(channel);
+      break;
    }
 }
 
-void tia_Run(int cycles)
+static void tia_Tick()
 {
-   tia_cycles += cycles;
-   while(tia_cycles >= (CYCLES_PER_SCANLINE / 2))  /* Maria / 228 ~ 1/2 scanline tick */
-	{
-      tia_Process();
-      tia_cycles -= (CYCLES_PER_SCANLINE / 2);
-	}
+   int index;
+   int outvol;
+
+   for (index = 0; index < 2; index++)
+   {
+      if (tia_s.counter[index] > 1)
+         tia_s.counter[index]--;
+
+      else if (tia_s.counter[index] == 1)
+      {
+         tia_s.counter[index] = tia_s.counterMax[index];
+         tia_ProcessChannel(index);
+      }
+   }
+
+   outvol = tia_s.volume[0] + tia_s.volume[1];  /* 2x 4-bit unsigned */
+   outvol *= 0x400;  /* 10-bit expansion */
+
+
+   index = out_tick;
+
+   out_clock2 -= out_tick2;
+   if (out_clock2 <= 0)
+   {
+      out_clock2 += out_rate;
+      index++;
+   }
+
+   while (index > 0)
+   {
+      tia_buffer[tia_outCount] = outvol;
+      tia_outCount++;
+
+      index--;
+   }
 }
 
-int tia_Output(void)
+INLINE void tia_Run()
 {
-   int currentValue = tia_volume[0] + tia_volume[1];  /* 2x 4-bit unsigned */
-   currentValue *= 0x400;  /* 15-bit expand */
+   if (out_clock)  /* past cycle 227 */
+      return;
 
-	tia_buffer[tia_count] = currentValue;
-   tia_count++;
+   if (prosystem_cycles < TIA_CYCLES)  /* wait mid-scanline */
+      return;
 
-   return currentValue;
+   tia_Tick();
+   out_clock++;
 }
 
-int16_t *tia_GetBuffer(void)
+INLINE void tia_ScanlineEnd()
 {
-   return tia_buffer;
+   tia_Tick();  /* cycle 454 */
+   out_clock--;
+}
+
+void tia_SetRate()
+{
+   int clock = 2 * prosystem_scanlines * prosystem_frequency;  /* 2x per scanline */
+
+   out_rate = clock;
+
+   out_tick = mixer_rate / out_rate;
+   out_tick2 = mixer_rate % out_rate;
+
+   out_clock = 0;
+   out_clock2 = out_rate;  /* always zero at end-of-frame */
+}
+
+void tia_LoadState(void)
+{
+   memcpy(memory_ram + 0x00, prosystem_statePtr, 0x20);
+   prosystem_statePtr += 0x20;
+
+   memcpy(&tia_s, prosystem_statePtr, sizeof(tia_s));
+   prosystem_statePtr += sizeof(tia_s);
+}
+
+void tia_SaveState(void)
+{
+   memcpy(prosystem_statePtr, memory_ram + 0x00, 0x20);
+   prosystem_statePtr += 0x20;
+
+   memcpy(prosystem_statePtr, &tia_s, sizeof(tia_s));
+   prosystem_statePtr += sizeof(tia_s);
 }

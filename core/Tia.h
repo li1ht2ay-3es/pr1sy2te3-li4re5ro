@@ -42,29 +42,27 @@
 #ifndef TIA_H
 #define TIA_H
 
-#include <stdint.h>
-#include "Equates.h"
+#include "mixer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern void tia_SetRate(void);
 extern void tia_Reset(void);
-extern void tia_Write(uint16_t address, uint8_t data);
 extern void tia_Frame(void);
-extern void tia_Run(int cycles);
-extern int tia_Output(void);
-extern int16_t *tia_GetBuffer(void);
 
-extern uint8_t tia_volume[2];
-extern uint8_t tia_counterMax[2];
-extern uint8_t tia_counter[2];
-extern uint8_t tia_audc[2];
-extern uint8_t tia_audf[2];
-extern uint8_t tia_audv[2];
-extern int tia_poly4Cntr[2];
-extern int tia_poly5Cntr[2];
-extern int tia_poly9Cntr[2];
+extern uint8_t tia_Read(uint16_t address);
+extern void tia_Write(uint16_t address, uint8_t data);
+
+extern void tia_Run(void);
+extern void tia_ScanlineEnd(void);
+
+extern void tia_LoadState(void);
+extern void tia_SaveState(void);
+
+extern int16_t tia_buffer[MAX_SOUND_SAMPLES];
+extern int tia_outCount;
 
 #ifdef __cplusplus
 }

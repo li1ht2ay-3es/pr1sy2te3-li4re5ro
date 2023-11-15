@@ -52,53 +52,49 @@
 
 #define PRO_SYSTEM_STATE_HEADER "PRO-SYSTEM STATE"
 
-#ifdef _WINDOWS
-#include "../Win/resource.h"
-#include "logger.h"
-#include "archive.h"
-
-bool prosystem_active = false;
-bool prosystem_paused = false;
-byte prosystem_frame = 0;
-#endif
-
 int prosystem_frequency = 60;
 int prosystem_scanlines = 263;
 int prosystem_cycles = 0;
 
+uint8_t *prosystem_statePtr;
+
+static void prosystem_Map()
+{
+   cartridge_Map();
+
+   if (bios_enabled)
+      bios_Map();
+}
 
 void prosystem_Reset()
 {
    if (!cartridge_IsLoaded())
       return;
 
-   sally_Reset();
    region_Reset();
-   memory_Reset();
+
+   sally_Reset();
    maria_Reset();
+   memory_Reset();
    riot_Reset();
+
    mixer_Reset();
    tia_Reset();
-   pokey_Reset( );
+   pokey_Reset();
    bupchip_Reset();
    /* cartridge_LoadHighScoreCart(); */
 
-   if (bios_enabled)
-      bios_Store();
-   else
-      cartridge_Store();
-
-#ifdef _WINDOWS
-   prosystem_active = true;
-   prosystem_paused = false;
-   prosystem_frame = 0;
-#endif
+   cartridge_Reset();
+   prosystem_Map();
 }
 
 void prosystem_SetRate(int rate)
 {
-   mixer_SetRate(rate);
-   bupchip_SetRate(rate);
+   mixer_rate = rate;
+
+   mixer_SetRate();
+   tia_SetRate();
+   bupchip_SetRate();
 }
 
 static void prosystem_FireLightGun()
@@ -117,28 +113,41 @@ static void prosystem_FireLightGun()
 */
 }
 
+void prosystem_Run(int cycles)
+{
+   prosystem_cycles += cycles;
+
+   riot_Run(cycles);
+   cartridge_Run(cycles);
+   mixer_Run(cycles);
+
+   tia_Run();
+}
+
 void prosystem_ExecuteFrame(const uint8_t* input)
 {
    int cycles_total = 0;
-
-   riot_SetInput(input);
 
    mixer_Frame();
    tia_Frame();
    pokey_Frame();
    bupchip_Frame();
 
-   for (maria_scanline = 0; maria_scanline < prosystem_scanlines; maria_scanline++)
+
+   maria_scanline = maria_displayArea.bottom;  /* vblank start */
+   memory_ram[MSTAT] = 0x80;
+   riot_SetInput(input);
+
+
+   while (1)
    {
       int cycles;
       cycles_total -= prosystem_cycles;  /* debug */
 
 
-	   /* 0 = hsync */
+      /* 0 = hsync */
       {
-         memory_ram[MSTAT] = (maria_scanline >= maria_displayArea.top && maria_scanline < maria_displayArea.bottom) ? 0x00 : 0x80;
-         memory_ram[WSYNC] = false;
-
+         maria_Scanline();
          pokey_Scanline();
       }
 
@@ -148,35 +157,19 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          cycles = sally_Run();
          cycles += (!cycles) ? 28 - prosystem_cycles : 0;  /* wsync */
-
-			riot_Run(cycles);
-         tia_Run(cycles);
-         pokey_Run(cycles);
-         bupchip_Run(cycles);
-         //prosystem_FireLightGun();
-
-
          cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
-         mixer_Run(cycles);
 
-         prosystem_cycles += cycles;
+		 prosystem_Run(cycles);
       }
 
 
       /* 28-x = maria render */
       {
-	      cycles = maria_Run();
+         cycles = maria_Run();
          //if (cycles > CYCLES_PER_SCANLINE) cycles = CYCLES_PER_SCANLINE;
 
-         riot_Run(cycles);
-         tia_Run(cycles);
-         pokey_Run(cycles);
-         bupchip_Run(cycles);
-
-
-         mixer_Run(cycles);
-         prosystem_cycles += cycles;
-		}
+         prosystem_Run(cycles);
+      }
 
 
       /* x-453 = sally scanline */
@@ -184,231 +177,30 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          cycles = sally_Run();
          cycles += (!cycles) ? CYCLES_PER_SCANLINE - prosystem_cycles : 0;  /* wsync */
-
-         riot_Run(cycles);
-         tia_Run(cycles);
-         pokey_Run(cycles);
-         bupchip_Run(cycles);
-
-
          cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
-         mixer_Run(cycles);
 
-         prosystem_cycles += cycles;
+		 prosystem_Run(cycles);
       }
 
 
-		cycles_total += prosystem_cycles;  /* debug */
+      tia_ScanlineEnd();
+      cartridge_ScanlineEnd();
+
+
+	  cycles_total += prosystem_cycles;  /* debug */
       prosystem_cycles -= CYCLES_PER_SCANLINE;  /* overflow */
-	}
+
+      maria_scanline = (maria_scanline + 1) % prosystem_scanlines;
+      if (maria_scanline == maria_displayArea.bottom)
+         break;
+   }
 
 
    mixer_FrameEnd();
-
-#ifdef _WINDOWS
-	prosystem_frame++;
-#endif
 }
-
-#ifdef _WINDOWS
-bool prosystem_Save(std::string filename, bool compress) {
-  if(filename.empty( ) || filename.length( ) == 0) {
-    logger_LogError(IDS_PROSYSTEM1,"");
-    return false;
-  }
-
-  logger_LogInfo(IDS_PROSYSTEM2,filename);
-  
-  byte buffer[32829] = {0};
-  uint size = 0;
-  
-  uint index;
-  for(index = 0; index < 16; index++) {
-    buffer[size + index] = PRO_SYSTEM_STATE_HEADER[index];
-  }
-  size += 16;
-  
-  buffer[size++] = 1;
-  for(index = 0; index < 4; index++) {
-    buffer[size + index] = 0;
-  }
-  size += 4;
-
-  for(index = 0; index < 32; index++) {
-    buffer[size + index] = cartridge_digest[index];
-  }
-  size += 32;
-
-  buffer[size++] = sally_a;
-  buffer[size++] = sally_x;
-  buffer[size++] = sally_y;
-  buffer[size++] = sally_p;
-  buffer[size++] = sally_s;
-  buffer[size++] = sally_pc.b.l;
-  buffer[size++] = sally_pc.b.h;
-  buffer[size++] = cartridge_bank;
-
-  for(index = 0; index < 16384; index++) {
-    buffer[size + index] = memory_ram[index];
-  }
-  size += 16384;
-  
-  if(cartridge_type == CARTRIDGE_TYPE_SUPERCART_RAM) {
-    for(index = 0; index < 16384; index++) {
-      buffer[size + index] = memory_ram[16384 + index];
-    } 
-    size += 16384;
-  }
-  
-  if(!compress) {
-    FILE* file = fopen(filename.c_str( ), "wb");
-    if(file == NULL) {
-      logger_LogError(IDS_PROSYSTEM3,filename);
-      return false;
-    }
-  
-    if(fwrite(buffer, 1, size, file) != size) {
-      fclose(file);
-      logger_LogError(IDS_PROSYSTEM4,filename);
-      return false;
-    }
-  
-    fclose(file);
-  }
-  else {
-    if(!archive_Compress(filename.c_str( ), "Save.sav", buffer, size)) {
-      logger_LogError(IDS_PROSYSTEM5, filename);
-      return false;
-    }
-  }
-  return true;
-}
-
-bool prosystem_Load(const std::string filename, bool fastsavestates = false) {
-  if(filename.empty( ) || filename.length( ) == 0) {
-    logger_LogError(IDS_PROSYSTEM1,"");    
-    return false;
-  }
-
- 
-  logger_LogInfo(IDS_PROSYSTEM6,filename);
-  
-  byte buffer[32829] = {0};
-  uint size = archive_GetUncompressedFileSize(filename);
-  if(size == 0) {
-    FILE* file = fopen(filename.c_str( ), "rb");
-    if(file == NULL) {
-      logger_LogError(IDS_PROSYSTEM7,filename);
-      return false;
-    }
-
-    if(fseek(file, 0, SEEK_END)) {
-      fclose(file);
-      logger_LogError(IDS_PROSYSTEM8,"");
-      return false;
-    }
-  
-    size = ftell(file);
-    if(fseek(file, 0, SEEK_SET)) {
-      fclose(file);
-      logger_LogError(IDS_PROSYSTEM9,"");
-      return false;
-    }
-
-    if(size != 16445 && size != 32829) {
-      fclose(file);
-      logger_LogError(IDS_PROSYSTEM10,"");
-      return false;
-    }
-  
-    if(fread(buffer, 1, size, file) != size && ferror(file)) {
-      fclose(file);
-      logger_LogError(IDS_PROSYSTEM11,"");
-      return false;
-    }
-    fclose(file);
-  }  
-  else if(size == 16445 || size == 32829) {
-    //archive_Uncompress(filename, buffer, size);
-  }
-  else {
-    logger_LogError(IDS_PROSYSTEM12,"");
-    return false;
-  }
-
-  uint offset = 0;
-  uint index;
-  for(index = 0; index < 16; index++) {
-    if(buffer[offset + index] != PRO_SYSTEM_STATE_HEADER[index]) {
-      logger_LogError(IDS_PROSYSTEM13,"");
-      return false;
-    }
-  }
-  offset += 16;
-  byte version = buffer[offset++];
-  
-  uint date = 0;
-  for(index = 0; index < 4; index++) {
-  }
-  offset += 4;
-  
-  prosystem_Reset( );
-  
-  char digest[33] = {0};
-  for(index = 0; index < 32; index++) {
-    digest[index] = buffer[offset + index];
-  }
-  offset += 32;
-  if(cartridge_digest != std::string(digest)) {
-    logger_LogError(IDS_PROSYSTEM14, "[" + std::string(digest) + "] [" + cartridge_digest + "].");
-    return false;
-  }
-  
-  sally_a = buffer[offset++];
-  sally_x = buffer[offset++];
-  sally_y = buffer[offset++];
-  sally_p = buffer[offset++];
-  sally_s = buffer[offset++];
-  sally_pc.b.l = buffer[offset++];
-  sally_pc.b.h = buffer[offset++];
-  
-  cartridge_StoreBank(buffer[offset++]);
-
-  for(index = 0; index < 16384; index++) {
-    memory_ram[index] = buffer[offset + index];
-  }
-  offset += 16384;
-
-  if(cartridge_type == CARTRIDGE_TYPE_SUPERCART_RAM) {
-    if(size != 32829) {
-      logger_LogError(IDS_PROSYSTEM15,"");
-      return false;
-    }
-    for(index = 0; index < 16384; index++) {
-      memory_ram[16384 + index] = buffer[offset + index];
-    }
-    offset += 16384; 
-  }  
-
-  return true;
-}
-#endif
-
-#ifdef _WINDOWS
-void prosystem_Pause(bool pause)
-{
-   if(prosystem_active)
-      prosystem_paused = pause;
-}
-#endif
 
 void prosystem_Close(bool persistent_data)
 {
-#ifdef _WINDOWS  /* standalone */
-   prosystem_active = false;
-   prosystem_paused = false;
-#endif
-
    bupchip_Release();
    cartridge_Release(persistent_data);
    maria_Reset();
@@ -416,26 +208,37 @@ void prosystem_Close(bool persistent_data)
    tia_Reset();
 }
 
-uint32_t read_uint32_from_buffer(const char* buffer, uint32_t* offset)
+bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves)
 {
-    uint32_t index = *offset;
-    *offset += 8;
-    return (uint32_t)buffer[index]     << 28 |
-           (uint32_t)buffer[index + 1] << 24 |
-           (uint32_t)buffer[index + 2] << 20 |
-           (uint32_t)buffer[index + 3] << 16 |
-           (uint32_t)buffer[index + 4] << 12 |
-           (uint32_t)buffer[index + 5] << 8  |
-           (uint32_t)buffer[index + 6] << 4  |
-           (uint32_t)buffer[index + 7];
+   prosystem_statePtr = buffer;
+
+   if (memcmp(prosystem_statePtr, PRO_SYSTEM_STATE_HEADER, sizeof(PRO_SYSTEM_STATE_HEADER)-1) != 0)
+      return false;
+   prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
+
+   cartridge_LoadState();
+   maria_LoadState();
+   memory_LoadState();
+   riot_LoadState();
+   sally_LoadState();
+   tia_LoadState();
+
+   return true;
 }
 
-void save_uint32_to_buffer(char* buffer, uint32_t* size, uint32_t data)
+int prosystem_SaveState(uint8_t *buffer, bool fast_saves)
 {
-   int i;
-   uint8_t shiftby = 32;
-   uint32_t index = *size;
-   *size += 8;
-   for (i = 0; i < 8; i++)
-      buffer[index++] = (data >> (shiftby -= 4)) & 0xF;
+   prosystem_statePtr = buffer;
+
+   memcpy(prosystem_statePtr, PRO_SYSTEM_STATE_HEADER, sizeof(PRO_SYSTEM_STATE_HEADER)-1);
+   prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
+
+   cartridge_SaveState();
+   maria_SaveState();
+   memory_SaveState();
+   riot_SaveState();
+   sally_SaveState();
+   tia_SaveState();
+
+   return prosystem_statePtr - buffer;
 }

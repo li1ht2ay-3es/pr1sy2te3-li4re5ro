@@ -20,36 +20,74 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * Memory.h
+ * Linear.c
  * ----------------------------------------------------------------------------
  */
-#ifndef MEMORY_H
-#define MEMORY_H
+#include "ProSystem.h"
+#include "Mapper.h"
+#include "Memory.h"
 
-#define MEMORY_SIZE 0x10000
-#define MEMORY_EXRAM_SIZE 0x8000
+/*
+Normal
+4K ROM
+8K ROM
+16K ROM
+32K ROM
+32K ROM + MirrorRAM@4000
+32K ROM + POKEY@4000
+48K ROM
 
-#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+Banksets
+2x32K ROM
+2x32K ROM + RAM@4000 + POKEY@800
+2x32K ROM + POKEY@4000
+2x48K ROM
+2x48K ROM + POKEY@4000(write-only)
+2x52K ROM
+2x52K ROM + POKEY@4000(write-only)
+*/
 
-extern void memory_Reset(void);
-extern void memory_Map(void);
+static uint32_t prg_size;
 
-extern uint8_t memory_Read(uint16_t address);
-extern void memory_Write(uint16_t address, uint8_t data);
+static uint8_t *prg_start;
+static uint8_t *chr_start;
 
-extern void memory_SaveState(void);
-extern void memory_LoadState(void);
-
-extern uint8_t memory_ram[MEMORY_SIZE];
-extern uint8_t memory_exram[MEMORY_EXRAM_SIZE];
-extern uint32_t memory_exram_size;
-
-#ifdef __cplusplus
+void linear_MapBios(void)
+{
+   sally_SetRead(0xf000, 0x10000, prg_start + prg_size - 0x1000);
+   maria_SetRead(0xf000, 0x10000, chr_start + prg_size - 0x1000);
 }
-#endif
 
-#endif
+void linear_Map(void)
+{
+   sally_SetRead(0x10000 - prg_size, 0x10000, prg_start);
+   maria_SetRead(0x10000 - prg_size, 0x10000, chr_start);
+}
+
+void linear_Reset(void)
+{
+   prg_size = cartridge_size / (cartridge_bankset ? 2 : 1);
+
+   prg_start = cartridge_buffer;
+   chr_start = cartridge_buffer + (cartridge_bankset ? prg_size : 0);
+
+   linear_Map();
+}
+
+uint8_t linear_Read(uint16_t address)
+{
+   return 0xff;
+}
+
+void linear_Write(uint16_t address, uint8_t data)
+{
+}
+
+void linear_LoadState(void)
+{
+}
+
+void linear_SaveState(void)
+{
+}

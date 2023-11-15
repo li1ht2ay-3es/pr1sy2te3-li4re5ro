@@ -53,13 +53,16 @@ uint8_t bupchip_flags;
 uint8_t bupchip_volume;
 uint8_t bupchip_current_song;
 
-static int bupchip_rate;
-static int bupchip_count;
-static int bupchip_tick;
-static int bupchip_tick2;
-static int bupchip_cycles;
-static int bupchip_cycles2;
+int bupchip_attenuation = 1;
+
+static int out_rate;
+static int out_tick;
+static int out_tick2;
+static int out_clock;
+static int out_clock2;
+
 int16_t bupchip_buffer[MAX_SOUND_SAMPLES];
+int bupchip_outCount;
 
 
 static void bupchip_ReplaceChar(char *string, char character, char replacement)
@@ -71,28 +74,6 @@ static void bupchip_ReplaceChar(char *string, char character, char replacement)
       *string = replacement;
       string++;
    }
-}
-
-void bupchip_Frame(void)
-{
-   bupchip_count = 0;
-}
-
-void bupchip_SetRate(int rate)
-{
-   int clock = CYCLES_PER_SCANLINE * prosystem_scanlines * prosystem_frequency;  /* Maria */
-   bupchip_rate = CORETONE_DECODE_RATE;  /* 240 Hz = default */
-
-   bupchip_tick  = clock / bupchip_rate;
-   bupchip_tick2 = clock % bupchip_rate;
-
-   ct_setrate(rate);
-}
-
-void bupchip_Reset(void)
-{
-   bupchip_cycles = 0;
-   bupchip_cycles2 = 0;
 }
 
 int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *workingDir)
@@ -179,6 +160,7 @@ void bupchip_Resume(void)
 void bupchip_SetVolume(uint8_t volume)
 {
    int attenuation;
+
    bupchip_volume = volume & 0x1f;
 
    /* This matches BupSystem. */
@@ -198,7 +180,7 @@ void bupchip_ProcessAudioCommand(unsigned char data)
       {
       case 0:
          bupchip_flags  = 0;
-         bupchip_volume = 0x1f;
+         bupchip_volume = 0x7f;
          ct_stopAll();
          ct_resume();
          ct_attenMusic(127);
@@ -228,7 +210,7 @@ void bupchip_ProcessAudioCommand(unsigned char data)
    }
 }
 
-void bupchip_Process(unsigned tick)
+void bupchip_Tick(unsigned tick)
 {
    ct_update(&bupchip_buffer[tick * CORETONE_BUFFER_LEN]);
 }
@@ -263,50 +245,64 @@ void bupchip_StateLoaded(void)
    bupchip_SetVolume(bupchip_volume);
 }
 
-void bupchip_Run(int cycles)
+INLINE void bupchip_ScanlineEnd()
 {
-   if (!cartridge_bupchip)
+   out_clock--;
+   if (out_clock > 0)  /* 240 Hz ~ 1/4 frame */
       return;
 
 
-   bupchip_cycles += cycles;
-   while (bupchip_cycles >= bupchip_tick)  /* usually 240 Hz */
+   bupchip_Tick(bupchip_outCount);
+   bupchip_outCount++;
+
+
+   out_clock = out_tick;
+   if (out_tick2 > 0)
    {
-      if (bupchip_cycles == bupchip_tick)  /* fractional */
+      out_clock2 -= out_tick2;
+      if (out_clock2 <= 0)
       {
-         if (bupchip_cycles2 < bupchip_tick2)
-            break;
-      }
-
-
-      bupchip_Process(bupchip_count);
-      bupchip_count++;
-
-
-      bupchip_cycles -= bupchip_tick;
-      bupchip_cycles2 -= bupchip_tick2;
-      if (bupchip_cycles2 < 0)  /* borrow */
-      {
-         bupchip_cycles--;
-         bupchip_cycles2 += bupchip_rate;
+         out_clock2 += out_rate;
+         out_clock++;
+         return;
       }
    }
 }
 
-int bupchip_Output()
+void bupchip_Output()
 {
    if (!cartridge_bupchip)
-	{
-      bupchip_buffer[bupchip_count+0] = 0;
-      bupchip_buffer[bupchip_count+1] = 0;
-      bupchip_count += 2;
-      return 0;
-	}
+   {
+      bupchip_buffer[bupchip_outCount + 0] = 0;
+      bupchip_buffer[bupchip_outCount + 1] = 0;
+      bupchip_outCount += 2;
+   }
 
-	return 0;  /* stream decoder */
+   /* stream decoder */
 }
 
-int16_t *bupchip_GetBuffer(void)
+void bupchip_Frame(void)
 {
-   return bupchip_buffer;
+   bupchip_outCount = 0;
+}
+
+void bupchip_SetRate()
+{
+   int clock = prosystem_scanlines * prosystem_frequency;
+
+   out_rate = CORETONE_DECODE_RATE;  /* 240 Hz = default */
+
+   out_tick  = clock / out_rate;
+   out_tick2 = clock % out_rate;
+
+
+   ct_setrate(mixer_rate);
+}
+
+void bupchip_Reset(void)
+{
+   out_clock = out_tick;
+   out_clock2 = out_rate;
+
+   memset(&bupchip_buffer, 0, sizeof(bupchip_buffer));
 }

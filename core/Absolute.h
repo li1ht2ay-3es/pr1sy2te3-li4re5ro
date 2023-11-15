@@ -20,36 +20,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * Memory.h
+ * Absolute.h
  * ----------------------------------------------------------------------------
  */
-#ifndef MEMORY_H
-#define MEMORY_H
+#ifndef ABSOLUTE_H
+#define ABSOLUTE_H
 
-#define MEMORY_SIZE 0x10000
-#define MEMORY_EXRAM_SIZE 0x8000
+extern void absolute_Reset(void);
+extern void absolute_Map(void);
+extern void absolute_MapBios(void);
 
-#include <stdint.h>
+extern uint8_t absolute_Read(uint16_t address);
+extern void absolute_Write(uint16_t address, uint8_t data);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern void memory_Reset(void);
-extern void memory_Map(void);
-
-extern uint8_t memory_Read(uint16_t address);
-extern void memory_Write(uint16_t address, uint8_t data);
-
-extern void memory_SaveState(void);
-extern void memory_LoadState(void);
-
-extern uint8_t memory_ram[MEMORY_SIZE];
-extern uint8_t memory_exram[MEMORY_EXRAM_SIZE];
-extern uint32_t memory_exram_size;
-
-#ifdef __cplusplus
-}
-#endif
+extern void absolute_LoadState(void);
+extern void absolute_SaveState(void);
 
 #endif

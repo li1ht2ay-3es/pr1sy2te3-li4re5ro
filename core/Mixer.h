@@ -51,14 +51,14 @@ extern "C" {
 
 #define MAX_SOUND_SAMPLES (3 * 2 * 384000 / 50 / 4)  /* 384000 stereo x 1.25 overflow */
 
+extern int16_t mixer_buffer[MAX_SOUND_SAMPLES];
+extern int mixer_outCount;
+extern int mixer_rate;
 
 extern void mixer_Reset(void);
 extern void mixer_Frame(void);
 extern void mixer_Run(int cycles);
-extern void mixer_SetRate(int rate);
-
-extern int mixer_GetCount(void);
-extern int16_t* mixer_GetBuffer(void);
+extern void mixer_SetRate(void);
 extern void mixer_FrameEnd(void);
 
 

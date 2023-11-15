@@ -56,36 +56,69 @@ static uint8_t maria_ctrl;
 static uint8_t maria_nmi;
 static uint8_t maria_dma;
 
-static uint8_t maria_ReadByte(uint16_t address)
+uint8_t *maria_readmap[0x400];
+
+void maria_SetRead(uint32_t start, uint32_t stop, uint8_t *chr)
 {
-   uint32_t page, chrOffset;
+   start /= 0x40;
+   stop /= 0x40;
 
-   if (address >= 0x20 && address < 0x40)  /* internal MARIA register */
-      return memory_ram[address];
+   while (start < stop)
+   {
+      maria_readmap[start++] = chr;
 
-   if (cartridge_type != CARTRIDGE_TYPE_SOUPER)
-      return memory_ram[address];
-
-
-   /* Souper */
-
-   if ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_MFT) == 0 || address < 0x8000 ||
-      ((cartridge_souper_mode & CARTRIDGE_SOUPER_MODE_CHR) == 0 && address < 0xc000))
-      return memory_Read(address);
-
-   if (address >= 0xC000) /* EXRAM */
-      return memory_Read(address - 0x8000);
-
-   if (address < 0xA000)  /* Fixed ROM */
-      return memory_Read(address + 0x4000);
-
-
-   page      = (uint16_t)cartridge_souper_chr_bank[((address & 0x80) != 0) ? 1 : 0];
-   chrOffset = (((page & 0xFE) << 4) | (page & 1)) << 7;
-   return cartridge_LoadROM((address & 0x0F7F) | chrOffset);
+      chr += 0x40;
+   }
 }
 
-static void maria_StoreCell(uint8_t data)
+INLINE uint8_t maria_Read(uint16_t address)
+{
+   switch (address)
+   {
+   case MSTAT:
+      return memory_ram[MSTAT];
+   }
+
+   return 0xff;
+}
+
+INLINE void maria_Write(uint16_t address, uint8_t data)
+{
+   switch (address)
+   {
+   case MSTAT:
+      break;
+
+   case WSYNC:
+      memory_ram[WSYNC] = 1;
+      break;
+
+   default:
+      memory_ram[address] = data;
+      break;
+   }
+}
+
+static INLINE void maria_AddCycles(int cycles)
+{
+   /* future use */
+
+   maria_cycles += cycles;
+}
+
+static INLINE uint8_t maria_ReadByte(uint16_t address)
+{
+   uint16_t bank = address / 0x40;
+   uint16_t offset = address % 0x40;
+
+   if (maria_readmap[bank] > 0)
+      return maria_readmap[bank][offset];
+
+   else
+      return memory_Read(address);
+}
+
+static INLINE void maria_StoreCell(uint8_t data)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
@@ -99,7 +132,7 @@ static void maria_StoreCell(uint8_t data)
    maria_horizontal++;
 }
 
-static void maria_StoreCell2(uint8_t high, uint8_t low)
+static INLINE void maria_StoreCell2(uint8_t high, uint8_t low)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
@@ -113,7 +146,7 @@ static void maria_StoreCell2(uint8_t high, uint8_t low)
    maria_horizontal++;
 }
 
-static bool maria_IsHoleyDMA(uint16_t address)
+static INLINE bool maria_IsHoleyDMA(uint16_t address)
 {
    if (address & 0x8000)
    {
@@ -124,12 +157,12 @@ static bool maria_IsHoleyDMA(uint16_t address)
    return false;
 }
 
-static uint8_t maria_GetColor(uint8_t data)
+static INLINE uint8_t maria_GetColor(uint8_t data)
 {
-   return maria_ReadByte(BACKGRND + ((data & 3) ? data : 0));
+   return memory_ram[BACKGRND + ((data & 3) ? data : 0)];
 }
 
-static void maria_StoreGraphic(uint8_t data, bool is_holey)
+static INLINE void maria_StoreGraphic(uint8_t data, bool is_holey)
 {
    if (!is_holey)
    {
@@ -229,18 +262,18 @@ static void maria_StoreLineRAM(void)
 {
    uint32_t index;
    uint8_t cwidth = maria_ctrl & 0x10;
-   uint8_t chigh = maria_ReadByte(CHARBASE) + maria_offset;
+   uint8_t chigh = memory_ram[CHARBASE] + maria_offset;
    pair list_dp = maria_dp;
 
 
-   for (index = 0; index < MARIA_LINERAM_SIZE; index++)
-      maria_lineRAM[index] = 0;
+   memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
 
 
-   if ((maria_ctrl & 0x60) != 0x40) return;  /* dma off */
+   if ((maria_ctrl & 0x60) != 0x40)  /* dma off */
+      return;
 
 
-   maria_cycles += 16;  /* dma startup + shutdown time */
+   maria_AddCycles(16);  /* dma startup + shutdown time */
 
    while (maria_cycles < MARIA_CYCLE_LIMIT)  /* render list */
    {
@@ -264,7 +297,7 @@ static void maria_StoreLineRAM(void)
          maria_wmode = mode & 0x80;
 
          mode = maria_ReadByte(list_dp.w++);
-         maria_cycles += 2;
+         maria_AddCycles(2);
       }
 
 
@@ -274,21 +307,23 @@ static void maria_StoreLineRAM(void)
       width = ((mode ^ 0xFF) & 0x1F) + 1;
 
       maria_horizontal = maria_ReadByte(list_dp.w++);
-      maria_cycles += 8;
+      maria_AddCycles(8);
 
+//if (maria_pp.w >= 0xa000 && maria_pp.w < 0xb000)
+	//maria_pp.w = 0x8000;
 
       for (index = 0; index < width; index++)
       {
          uint8_t data1, data2;
          bool is_holey;
 
-			if (maria_cycles >= MARIA_CYCLE_LIMIT)
+         if (maria_cycles >= MARIA_CYCLE_LIMIT)
             break;
 
 
          if (!indirect)
          {
-				data1 = maria_ReadByte(maria_pp.w);
+            data1 = maria_ReadByte(maria_pp.w);
             is_holey = maria_IsHoleyDMA(maria_pp.w++);
          }
 
@@ -304,25 +339,25 @@ static void maria_StoreLineRAM(void)
             data1 = maria_ReadByte(new_pp.w++);
             data2 = cwidth ? maria_ReadByte(new_pp.w++) : 0;
 
-            maria_cycles += (!is_holey) ? 3 : 0;  /* memory read penalty */
+            maria_AddCycles((!is_holey) ? 3 : 0);  /* memory read penalty */
          }
 
 
          if (is_holey)
          {
-            maria_cycles += (!skip_holey) ? 3 : 0;  /* 1-time zone skip penalty */
+            maria_AddCycles((!skip_holey) ? 3 : 0);  /* 1-time zone skip penalty */
             skip_holey = true;
          }
 
 
          maria_StoreGraphic(data1, is_holey);
-         maria_cycles += (!is_holey) ? 3 : 0;
+         maria_AddCycles((!is_holey) ? 3 : 0);
 
 
          if (indirect && cwidth)  /* 2 data bytes per map byte */
-			{
+         {
             maria_StoreGraphic(data2, is_holey);
-            maria_cycles += (!is_holey) ? 3 : 0;
+            maria_AddCycles((!is_holey) ? 3 : 0);
          }
       }
    }
@@ -332,14 +367,11 @@ static void maria_LoadDisplayList(void)
 {
    uint8_t mode;
 
-   if (!maria_dma) return;
-
-
    if (maria_dpp.w == 0)  /* list start */
-	{
-      maria_dpp.b.h = maria_ReadByte(DPPH);
-      maria_dpp.b.l = maria_ReadByte(DPPL);
-	}
+   {
+      maria_dpp.b.h = memory_ram[DPPH];
+      maria_dpp.b.l = memory_ram[DPPL];
+   }
 
 
    mode = maria_ReadByte(maria_dpp.w++);
@@ -354,7 +386,7 @@ static void maria_LoadDisplayList(void)
 
    if (maria_nmi)  /* display list interrupt */
    {
-      maria_cycles += 1;
+      maria_AddCycles(1);
 
       sally_SetNMI();
    }
@@ -362,42 +394,44 @@ static void maria_LoadDisplayList(void)
 
 static int maria_RenderScanline(void)
 {
-   maria_ctrl = maria_ReadByte(CTRL);
+   maria_ctrl = memory_ram[CTRL];
    maria_dma = (maria_ctrl & 0x60) == 0x40;
 
    maria_cycles = 0;
 
 
-	if (maria_scanline <= maria_displayArea.top-1)  /* vblank top */
+   if (maria_scanline <= maria_displayArea.top-1)  /* vblank top */
    {
       maria_dpp.w = 0;  /* reset */
-		maria_offset = 0;
+      maria_offset = 0;
       return 0;
    }
 
-	else if (maria_scanline >= maria_displayArea.bottom+1)  /* vblank bottom */
+   else if (maria_scanline >= maria_displayArea.bottom)  /* vblank bottom */
       return 0;
 
-	else
-	{
-      if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
-         maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
-
-	   else if (maria_dpp.w == 0)  /* dma start */
-         maria_LoadDisplayList();
-
-
-		maria_StoreLineRAM();  /* build next line */
-
-
+   else
+   {
       if (!maria_dma || maria_scanline > maria_displayArea.bottom)
          return 0;
 
 
+      if (maria_dpp.w == 0)  /* dma start */
+	  {
+         maria_LoadDisplayList();
+         maria_StoreLineRAM();  /* build next line */
+	  }
+
+      else if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
+	  {
+         maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
+         maria_StoreLineRAM();  /* build next line */
+	  }
+
+
       if (!maria_offset--)  /* zone finished */
       {
-         maria_cycles += 6;  /* extra shutdown time */
-if(maria_ctrl & 0x10) maria_cycles += 6;
+         maria_AddCycles(6);  /* extra shutdown time */
 
          maria_LoadDisplayList();
       }
@@ -408,12 +442,20 @@ if(maria_ctrl & 0x10) maria_cycles += 6;
 
 void maria_Reset(void)
 {
-   maria_Clear();
+   memset(maria_readmap, 0, sizeof(maria_readmap));
 }
 
-int maria_Run(void)
+INLINE int maria_Run(void)
 {
    return maria_RenderScanline();
+}
+
+INLINE void maria_Scanline(void)
+{
+   if (maria_scanline == maria_displayArea.top)  /* render start */
+      memory_ram[MSTAT] = 0x00;
+
+   memory_ram[WSYNC] = false;
 }
 
 void maria_Clear(void)
@@ -422,4 +464,16 @@ void maria_Clear(void)
 
    for (index = 0; index < MARIA_SURFACE_SIZE; index++)
       maria_surface[index] = 0;
+}
+
+void maria_SaveState(void)
+{
+   memcpy(prosystem_statePtr, memory_ram + 0x20, 0x20);
+   prosystem_statePtr += 0x20;
+}
+
+void maria_LoadState(void)
+{
+   memcpy(memory_ram + 0x20, prosystem_statePtr, 0x20);
+   prosystem_statePtr += 0x20;
 }
