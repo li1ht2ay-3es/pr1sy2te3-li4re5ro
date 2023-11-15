@@ -411,7 +411,8 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!info)
       return false;
 
-   strncpy(cartridge_title, info_ext->name, sizeof(cartridge_title));
+   if (info_ext->name)
+      strcpy(cartridge_title, info_ext->name);
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
