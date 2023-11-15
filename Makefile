@@ -682,7 +682,8 @@ WARNINGS :=
 else ifneq (,$(findstring msvc,$(platform)))
 WARNINGS :=
 else
-WARNINGS := -Wall
+WARNINGS := -Wall \
+            -fsanitize=undefined
 endif
 
 FLAGS += -D__LIBRETRO__ $(WARNINGS)
