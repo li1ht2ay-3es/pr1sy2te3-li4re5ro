@@ -464,7 +464,7 @@ bool retro_load_game(const struct retro_game_info *info)
       /* CDF file. */
       int ok;
       char* lastSlash = (char *) strrchr(info->path, slash);
-      size_t baseSize = (lastSlash == NULL) ? strlen(info->path) : lastSlash - info->path;
+      size_t baseSize = (lastSlash == NULL) ? strlen(info->path) : (size_t) (lastSlash - info->path);
       char* workingDir = (char *) malloc(baseSize + 1);
       memcpy(workingDir, info->path, baseSize);
       workingDir[baseSize] = '\0';
