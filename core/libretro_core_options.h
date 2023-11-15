@@ -62,18 +62,6 @@ struct retro_core_option_definition option_defs_us[] = {
       "Auto"
    },
    {
-      "prosystem_aspect_ratio",
-      "Aspect Ratio",
-      "Stretch mode.",
-      {
-         { "Native", NULL },
-         { "PAR", NULL },
-         { "4:3", NULL },
-         { NULL, NULL },
-      },
-      "Native"
-   },
-   {
       "prosystem_color_depth",
       "Color Depth (Restart core)",
       "Specifies number of colors to display on-screen. 24-bit may increase performance overheads on some platforms.",
