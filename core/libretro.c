@@ -343,7 +343,7 @@ bool retro_serialize(void *data, size_t size)
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
-   return prosystem_Save((char*)data, fast_savestates);
+   return prosystem_SaveState((char*)data, fast_savestates);
 }
 
 bool retro_unserialize(const void *data, size_t size)
@@ -352,7 +352,7 @@ bool retro_unserialize(const void *data, size_t size)
    if ((fast_savestates && size != FAST_SAVE_STATE_SIZE) || (!fast_savestates && size != SAVE_STATE_SIZE))
       return false;
 
-   return prosystem_Load((const char*)data, fast_savestates);
+   return prosystem_LoadState((const char*)data, fast_savestates);
 }
 
 void retro_cheat_reset(void)
