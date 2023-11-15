@@ -349,7 +349,21 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.base_height  = (cartridge_region == REGION_NTSC) ? 224 : 272;
    info->geometry.max_width    = 320;
    info->geometry.max_height   = 272;
-   info->geometry.aspect_ratio = 4.0f / 3.0f;
+
+   switch (display_aspect)
+   {
+   default: /* Native */
+      info->geometry.aspect_ratio = 320.0f / ((cartridge_region == REGION_NTSC) ? 224.0f : 272.0f);
+      break;
+
+   case 1:  /* Pixel Aspect @ 320 */
+      info->geometry.aspect_ratio = (cartridge_region == REGION_NTSC) ? 6.0f / 7.0f : 1.040f;
+      break;
+
+   case 2:  /* TV */
+      info->geometry.aspect_ratio = 4.0f / 3.0f;
+      break;
+   }
 }
 
 static void update_geometry(void)
