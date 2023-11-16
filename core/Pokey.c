@@ -124,13 +124,13 @@ static int pokey_lpfCount[4];
 static int pokey_lpfOld[4];
 static int pokey_lpfNew[4];
 
-/* #define pokey_lowpass 1  /* 315/88/2 MHz*/
-#define pokey_lowpass 80  /* 1.789 MHz @ 22362 */
-/* #define pokey_lowpass 95  /* 1.789 MHz @ 18839 */
-/* #define pokey_lowpass 112  /* 1.789 MHz @ 15980 */
-/* #define pokey_lowpass 120  /* 1.789 MHz @ 14914 */
-/* #define pokey_lowpass 128  /* 1.789 MHz @ 13984 */
-int pokey_lowpass = pokey_lowpass;
+/* #define POKEY_LOWPASS 1  /* 315/88/2 MHz*/
+#define POKEY_LOWPASS 80  /* 1.789 MHz @ 22362 */
+/* #define POKEY_LOWPASS 95  /* 1.789 MHz @ 18839 */
+/* #define POKEY_LOWPASS 112  /* 1.789 MHz @ 15980 */
+/* #define POKEY_LOWPASS 120  /* 1.789 MHz @ 14914 */
+/* #define POKEY_LOWPASS 128  /* 1.789 MHz @ 13984 */
+int pokey_lowpass = POKEY_LOWPASS;
 
 static void rand_init(uint8_t *rng, uint32_t size, uint32_t left, uint32_t right, uint32_t add)
 {
