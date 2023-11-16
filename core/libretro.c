@@ -678,6 +678,7 @@ void retro_run(void)
    const uint8_t *buffer = NULL;
    uint32_t video_pitch  = 320;
    bool options_updated  = false;
+   int index = 0;
 
    videoWidth  = Rect_GetLength(&maria_visibleArea);
    videoHeight = Rect_GetHeight(&maria_visibleArea);
@@ -702,5 +703,7 @@ void retro_run(void)
    }
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
-   audio_batch_cb(mixer_buffer, mixer_outCount);
+
+   while (mixer_outCount > 0)
+      mixer_outCount -= audio_batch_cb(mixer_buffer + index * 4, mixer_outCount);
 }

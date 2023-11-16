@@ -124,13 +124,13 @@ static int pokey_lpfCount[4];
 static int pokey_lpfOld[4];
 static int pokey_lpfNew[4];
 
-/* #define POKEY_LOWPASS_LIMIT 1  /* 315/88/2 MHz*/
-#define POKEY_LOWPASS_LIMIT 80  /* 1.789 MHz @ 22362 */
-/* #define POKEY_LOWPASS_LIMIT 95  /* 1.789 MHz @ 18839 */
-/* #define POKEY_LOWPASS_LIMIT 112  /* 1.789 MHz @ 15980 */
-/* #define POKEY_LOWPASS_LIMIT 120  /* 1.789 MHz @ 14914 */
-/* #define POKEY_LOWPASS_LIMIT 128  /* 1.789 MHz @ 13984 */
-int pokey_lowpass_limit = POKEY_LOWPASS_LIMIT;
+/* #define pokey_lowpass 1  /* 315/88/2 MHz*/
+#define pokey_lowpass 80  /* 1.789 MHz @ 22362 */
+/* #define pokey_lowpass 95  /* 1.789 MHz @ 18839 */
+/* #define pokey_lowpass 112  /* 1.789 MHz @ 15980 */
+/* #define pokey_lowpass 120  /* 1.789 MHz @ 14914 */
+/* #define pokey_lowpass 128  /* 1.789 MHz @ 13984 */
+int pokey_lowpass = pokey_lowpass;
 
 static void rand_init(uint8_t *rng, uint32_t size, uint32_t left, uint32_t right, uint32_t add)
 {
@@ -187,7 +187,7 @@ void pokey_Frame(void)
 
 void pokey_SetLowpass(int rate)
 {
-   pokey_lowpass_limit = rate;
+   pokey_lowpass = rate;
 }
 
 void pokey_Reset(void)
@@ -472,8 +472,8 @@ static void pokey_Process(void)
       int newvol = ((pokey_output[index] ^ pokey_filter[index]) || (pokey_audc[index] & POKEY_VOLUME_ONLY)) ? (pokey_audc[index] & POKEY_VOLUME_MASK) : 0;
 
       pokey_lpfCount[index] = (pokey_lpfNew[index] == newvol) ? pokey_lpfCount[index] + 1 : 0;  /* frequency change */
-      pokey_lpfOld[index] = (pokey_lpfCount[index] >= pokey_lowpass_limit) ? newvol : pokey_lpfOld[index];  /* latch new value */
       pokey_lpfNew[index] = newvol;
+      pokey_lpfOld[index] = (pokey_lpfCount[index] >= pokey_lowpass) ? pokey_lpfNew[index] : pokey_lpfOld[index];  /* latch new value */
    }
 }
 
