@@ -80,8 +80,7 @@
 extern "C" {
 #endif
 
-extern int16_t pokey_buffer[MAX_SOUND_SAMPLES];
-extern int pokey_outCount;
+extern void pokey_SetLowpass(int rate);
 
 extern void pokey_Reset(void);
 extern uint8_t pokey_Read(uint16_t address);
@@ -91,6 +90,9 @@ extern void pokey_Frame(void);
 extern void pokey_Run(int cycles);
 extern void pokey_Scanline(void);
 extern void pokey_Output(void);
+
+extern int16_t pokey_buffer[MAX_SOUND_SAMPLES];
+extern int pokey_outCount;
 
 #ifdef __cplusplus
 }

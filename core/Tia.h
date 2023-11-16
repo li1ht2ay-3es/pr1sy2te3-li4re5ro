@@ -49,6 +49,7 @@ extern "C" {
 #endif
 
 extern void tia_SetRate(void);
+extern void tia_SetLowpass(int limit);
 extern void tia_Reset(void);
 extern void tia_Frame(void);
 

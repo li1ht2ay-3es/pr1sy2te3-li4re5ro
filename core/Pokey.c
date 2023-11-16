@@ -126,7 +126,7 @@ static int pokey_lpfNew[4];
 
 /* #define POKEY_LOWPASS_LIMIT 1  /* 315/88/2 MHz*/
 /* #define POKEY_LOWPASS_LIMIT 80  /* 1.789 MHz @ 22362 */
-/* #define POKEY_LOWPASS_LIMIT 96  /* 1.789 MHz @ 18635 */
+/* #define POKEY_LOWPASS_LIMIT 95  /* 1.789 MHz @ 18839 */
 /* #define POKEY_LOWPASS_LIMIT 112  /* 1.789 MHz @ 15980 */
 #define POKEY_LOWPASS_LIMIT 120  /* 1.789 MHz @ 14914 */
 /* #define POKEY_LOWPASS_LIMIT 128  /* 1.789 MHz @ 13984 */

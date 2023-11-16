@@ -98,6 +98,40 @@ struct retro_core_option_definition option_defs_us[] = {
       "48000"
    },
    {
+      "prosystem_tia_lowpass",
+      "TIA Audio Filter",
+      "Remove harsh high frequency sounds.",
+      {
+         { "1", "31 KHz (off)" },
+         { "2", "15 KHz" },
+         { "3", "10 KHz" },
+         { "4", "7 KHz" },
+         { NULL, NULL },
+      },
+      "2"
+   },
+   {
+      "prosystem_pokey_lowpass",
+      "POKEY Audio Filter",
+      "Remove harsh high frequency sounds.",
+      {
+         { "1", "1.7 MHz (off)" },
+         { "80", "22 KHz" },
+         { "86", "21 KHz" },
+         { "90", "20 KHz" },
+         { "95", "19 KHz" },
+         { "100", "18 KHz" },
+         { "106", "17 KHz" },
+         { "112", "16 KHz" },
+         { "120", "15 KHz" },
+         { "128", "14 KHz" },
+         { "138", "13 KHz" },
+         { "150", "12 KHz" },
+         { NULL, NULL },
+      },
+      "128"
+   },
+   {
       "prosystem_low_pass_filter",
       "Audio Filter",
       "Enables a low pass audio filter to soften the 'harsh' sound produced by the Atari 7800's TIA chip.",

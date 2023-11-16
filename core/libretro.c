@@ -23,7 +23,6 @@
 #include "ProSystem.h"
 #include "Tia.h"
 #include "Memory.h"
-#include "BupChip.h"
 #include "Mixer.h"
 #include "Database.h"
 #include "Palette.h"
@@ -339,6 +338,28 @@ static void check_variables(bool first_run)
 
       if (display_aspect != old_aspect)
          update_geometry();
+   }
+
+
+   var.key   = "prosystem_tia_lowpass";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      int val = atoi(var.value);
+
+      tia_SetLowpass(val);
+   }
+
+
+   var.key   = "prosystem_pokey_lowpass";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      int val = atoi(var.value);
+
+      pokey_SetLowpass(val);
    }
 
 

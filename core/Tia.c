@@ -82,6 +82,23 @@ static int out_clock2;
 int16_t tia_buffer[MAX_SOUND_SAMPLES];
 int tia_outCount;
 
+static int tia_lpfCount[2];
+static int tia_lpfOld[2];
+static int tia_lpfNew[2];
+int tia_lowpass = 2;
+
+
+void tia_SetLowpass(int limit)
+{
+/*
+1 = 31 KHz, off
+2 = 15 KHz
+3 = 10 KHz
+4 = 7 KHz
+*/
+
+   tia_lowpass = limit;
+}
 
 static void tia_ProcessChannel(uint8_t channel)
 {
@@ -213,7 +230,8 @@ INLINE void tia_Write(uint16_t address, uint8_t data)
 static void tia_Tick()
 {
    int index;
-   int outvol;
+   int outvol = 0;
+
 
    for (index = 0; index < 2; index++)
    {
@@ -225,9 +243,16 @@ static void tia_Tick()
          tia_s.counter[index] = tia_s.counterMax[index];
          tia_ProcessChannel(index);
       }
+
+
+      tia_lpfCount[index] = (tia_lpfNew[index] == tia_s.volume[index]) ? tia_lpfCount[index] + 1 : 1;  /* frequency change */
+      tia_lpfNew[index] = tia_s.volume[index];
+      tia_lpfOld[index] = (tia_lpfCount[index] >= tia_lowpass) ? tia_lpfNew[index] : tia_lpfOld[index];  /* latch new value */
+
+      outvol += tia_lpfOld[index];  /* 4-bit unsigned */
    }
 
-   outvol = tia_s.volume[0] + tia_s.volume[1];  /* 2x 4-bit unsigned */
+
    outvol *= 0x400;  /* 10-bit expansion */
 
 
