@@ -39,7 +39,7 @@ extern void linearFree(void* mem);
 static uint8_t *videoBuffer            = NULL;
 static uint8_t videoPixelBytes         = 2;
 static int videoWidth                  = 320;
-static int videoHeight                 = 240;
+static int videoHeight                 = 224;
 static uint32_t display_palette32[256] = {0};
 static uint16_t display_palette16[256] = {0};
 static uint8_t keyboard_data[17]       = {0};
@@ -353,11 +353,11 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    switch (display_aspect)
    {
    default: /* Native */
-      info->geometry.aspect_ratio = 320.0f / ((cartridge_region == REGION_NTSC) ? 224.0f : 272.0f);
+      info->geometry.aspect_ratio = (float) videoWidth / (float) videoHeight;
       break;
 
    case 1:  /* Pixel Aspect @ 320 */
-      info->geometry.aspect_ratio = (cartridge_region == REGION_NTSC) ? 6.0f / 7.0f : 1.040f;
+      info->geometry.aspect_ratio = (float) videoWidth * ((cartridge_region == REGION_NTSC) ? 6.0f / 7.0f : 1.040f) / (float) videoHeight;
       break;
 
    case 2:  /* TV */
