@@ -117,12 +117,12 @@ static int prev_random_scanline_counter;
 
 static int pokey_cycles;
 
-int16_t pokey_buffer[MAX_SOUND_SAMPLES];
+int16_t pokey_buffer[MAX_SOUND_SAMPLES] = {0};
 int pokey_outCount;
 
-static int pokey_lpfCount[4];
-static int pokey_lpfOld[4];
-static int pokey_lpfNew[4];
+static int pokey_lpfCount[4] = {0};
+static int pokey_lpfOld[4] = {0};
+static int pokey_lpfNew[4] = {0};
 
 /* #define POKEY_LOWPASS 1  /* 315/88/2 MHz*/
 #define POKEY_LOWPASS 80  /* 1.789 MHz @ 22362 */
