@@ -83,12 +83,12 @@ void mixer_Frame(void)
 void mixer_Run(int cycles)
 {
    mixer_cycles += cycles;
-   while(mixer_cycles >= mixer_tick)
+   while (mixer_cycles >= mixer_tick)
    {
       if (mixer_cycles == mixer_tick)  /* fractional */
       {
-         if (mixer_cycles2 < mixer_tick2)
-            break;
+         //if (mixer_cycles2 < mixer_tick2)
+            //break;
       }
 
 
@@ -101,7 +101,7 @@ void mixer_Run(int cycles)
 
       mixer_cycles -= mixer_tick;
       mixer_cycles2 -= mixer_tick2;
-      if (mixer_cycles2 <= 0)  /* borrow */
+      if (mixer_cycles2 < 0)  /* borrow */
       {
          mixer_cycles--;
          mixer_cycles2 += mixer_rate;
@@ -126,6 +126,8 @@ void mixer_FrameEnd(void)
       static int frame = 0;
       frame++;
       if (mixer_outCount != tia_outCount)  /* debug assert */
+	     mixer_outCount += 0;
+      if (mixer_outCount != 800 && mixer_rate == 48000)  /* debug assert */
 	     mixer_outCount += 0;
    }
 #endif
