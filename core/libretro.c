@@ -137,10 +137,6 @@ static void display_ResetPalette(void)
    }
 }
 
-static short sound_Lerp(short a, short b, float t) {
-   return (short)floorf((float)a + (float)(b - a) * t + 0.5f);
-}
-
 static void update_input(void)
 {
    unsigned i,j;
@@ -236,97 +232,9 @@ static void update_input(void)
    keyboard_data[16] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R))      ? 1 : 0;
 }
 
-void check_variables(bool first_run)
-{
-   struct retro_variable var = {0};
-
-   /* Read low pass audio filter settings */
-   var.key   = "prosystem_low_pass_filter";
-   var.value = NULL;
-
-   low_pass_enabled = false;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      if (strcmp(var.value, "enabled") == 0)
-         low_pass_enabled = true;
-
-   var.key   = "prosystem_low_pass_range";
-   var.value = NULL;
-
-   low_pass_range = (60 * 0x10000) / 100;
-
-	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-		low_pass_range = (strtol(var.value, NULL, 10) * 0x10000) / 100;
-
-   /* Read dual stick controller setting */
-   var.key   = "prosystem_gamepad_dual_stick_hack";
-   var.value = NULL;
-
-   gamepad_dual_stick_hack = false;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      if (strcmp(var.value, "enabled") == 0)
-         gamepad_dual_stick_hack = true;
-
-
-   var.key   = "prosystem_aspect_ratio";
-   var.value = NULL;
-
-   display_aspect = 0;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-	  if (strcmp(var.value, "PAR") == 0)
-	     display_aspect = 1;
-
-	  else if (strcmp(var.value, "4:3") == 0)
-	     display_aspect = 2;
-   }
-
-
-   if (!first_run)
-      return;
-
-   /* Only read colour depth option on first run */
-   var.key   = "prosystem_color_depth";
-   var.value = NULL;
-
-   /* Set 16bpp by default */
-   videoPixelBytes = 2;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      if (strcmp(var.value, "24bit") == 0)
-         videoPixelBytes = 4;
-
-
-   var.key   = "prosystem_audio_rate";
-   var.value = NULL;
-
-   audio_rate = 48000;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      audio_rate = atoi(var.value);
-
-
-   var.key   = "prosystem_console_region";
-   var.value = NULL;
-
-   console_region = REGION_AUTO;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-	  if (strcmp(var.value, "NTSC") == 0)
-	     console_region = REGION_NTSC;
-
-	  else if (strcmp(var.value, "PAL") == 0)
-	     console_region = REGION_PAL;
-   }
-}
-
 /************************************
  * libretro implementation
  ************************************/
-
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -378,6 +286,99 @@ static void update_timing(void)
    struct retro_system_av_info info;
    retro_get_system_av_info(&info);
    environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+}
+
+static void check_variables(bool first_run)
+{
+   struct retro_variable var = {0};
+
+   /* Read low pass audio filter settings */
+   var.key   = "prosystem_low_pass_filter";
+   var.value = NULL;
+
+   low_pass_enabled = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      if (strcmp(var.value, "enabled") == 0)
+         low_pass_enabled = true;
+
+   var.key   = "prosystem_low_pass_range";
+   var.value = NULL;
+
+   low_pass_range = (60 * 0x10000) / 100;
+
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		low_pass_range = (strtol(var.value, NULL, 10) * 0x10000) / 100;
+
+   /* Read dual stick controller setting */
+   var.key   = "prosystem_gamepad_dual_stick_hack";
+   var.value = NULL;
+
+   gamepad_dual_stick_hack = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      if (strcmp(var.value, "enabled") == 0)
+         gamepad_dual_stick_hack = true;
+
+
+   var.key   = "prosystem_aspect_ratio";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      int old_aspect = display_aspect;
+
+	  if (strcmp(var.value, "PAR") == 0)
+	     display_aspect = 1;
+
+	  else if (strcmp(var.value, "4:3") == 0)
+	     display_aspect = 2;
+
+	  else
+         display_aspect = 0;
+
+      if (display_aspect != old_aspect)
+         update_geometry();
+   }
+
+
+   if (!first_run)
+      return;
+
+   /* Only read colour depth option on first run */
+   var.key   = "prosystem_color_depth";
+   var.value = NULL;
+
+   /* Set 16bpp by default */
+   videoPixelBytes = 2;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      if (strcmp(var.value, "24bit") == 0)
+         videoPixelBytes = 4;
+
+
+   var.key   = "prosystem_audio_rate";
+   var.value = NULL;
+
+   audio_rate = 48000;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      audio_rate = atoi(var.value);
+
+
+   var.key   = "prosystem_console_region";
+   var.value = NULL;
+
+   console_region = REGION_AUTO;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "NTSC") == 0)
+	     console_region = REGION_NTSC;
+
+	  else if (strcmp(var.value, "PAL") == 0)
+	     console_region = REGION_PAL;
+   }
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -658,11 +659,6 @@ void retro_deinit(void)
 void retro_reset(void)
 {
    prosystem_Reset();
-}
-
-static INLINE uint32_t Rect_GetHeight(struct Rects *rect)
-{
-   return (rect->bottom - rect->top) + 1;
 }
 
 void retro_run(void)
