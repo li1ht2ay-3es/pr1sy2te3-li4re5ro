@@ -549,6 +549,8 @@ bool retro_load_game(const struct retro_game_info *info)
    if (info_ext->name)
       strcpy(cartridge_title, info_ext->name);
 
+   prosystem_SetRate(audio_rate);
+
    if (info->size >= 10 && memcmp(info->data, "ProSystem", 9) == 0)
    {
       /* CDF file. */
@@ -582,7 +584,6 @@ bool retro_load_game(const struct retro_game_info *info)
       bios_enabled = true;
 
    prosystem_Reset();
-   prosystem_SetRate(audio_rate);
 
    display_ResetPalette();
 
