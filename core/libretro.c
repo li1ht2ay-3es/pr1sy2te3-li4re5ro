@@ -254,7 +254,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->timing.fps            = (cartridge_region == REGION_NTSC) ? 60 : 50;
    info->timing.sample_rate    = audio_rate;
    info->geometry.base_width   = videoWidth;
-   info->geometry.base_height  = (cartridge_region == REGION_NTSC) ? 224 : 272;
+   info->geometry.base_height  = videoHeight;
    info->geometry.max_width    = 320;
    info->geometry.max_height   = 272;
 
@@ -667,6 +667,9 @@ void retro_run(void)
    uint32_t video_pitch  = 320;
    bool options_updated  = false;
 
+   videoWidth  = Rect_GetLength(&maria_visibleArea);
+   videoHeight = Rect_GetHeight(&maria_visibleArea);
+
    /* Core options */
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &options_updated) && options_updated)
       check_variables(false);
@@ -675,8 +678,6 @@ void retro_run(void)
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
 
-   videoWidth  = Rect_GetLength(&maria_visibleArea);
-   videoHeight = Rect_GetHeight(&maria_visibleArea);
    buffer      = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
 
    if (videoPixelBytes == 2)

@@ -362,9 +362,7 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
 
 
    cartridge_type = 0;
-   cartridge_bupchip = 0;
-   cartridge_pokey = POKEY_NONE;
-   cartridge_ym2151 = 0;
+   cartridge_region = REGION_NTSC;
 
    cartridge_bankset = 0;
    cartridge_exrom = 0;
@@ -373,8 +371,10 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
    cartridge_exram_m2 = 0;
    cartridge_exram_x2 = 0;
    cartridge_exram_a8 = 0;
-   cartridge_region = 0;
 
+   cartridge_pokey = POKEY_NONE;
+   cartridge_ym2151 = 0;
+   cartridge_bupchip = 0;
 
    if(cartridge_HasHeader(header))
    {

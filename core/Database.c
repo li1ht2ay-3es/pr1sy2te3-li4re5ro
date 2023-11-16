@@ -269,14 +269,14 @@ static void fixup(int index)
 
    if (strstr(db_list[index].title, "(PAL)") ||
 	   strstr(db_list[index].title, "(Europe)"))
-      cartridge_region = 1;
+      cartridge_region = REGION_PAL;
 }
 
 static void detect(void)
 {
    if (strstr(cartridge_title, "(PAL)") ||
 	   strstr(cartridge_title, "(Europe)"))
-      cartridge_region = 1;
+      cartridge_region = REGION_PAL;
 
 
    if (cartridge_size < 0xe000)
