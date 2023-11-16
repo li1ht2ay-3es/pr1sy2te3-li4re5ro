@@ -404,7 +404,7 @@ static int maria_RenderScanline(void)
       return 0;
    }
 
-   else if (maria_scanline >= maria_displayArea.bottom)  /* vblank bottom */
+   else if (maria_scanline > maria_displayArea.bottom)  /* vblank bottom */
       return 0;
 
    else
@@ -461,7 +461,7 @@ INLINE int maria_Run(void)
 
 INLINE void maria_Scanline(void)
 {
-   memory_ram[MSTAT] = (maria_scanline < maria_displayArea.top || maria_scanline >= maria_displayArea.bottom) ? 0x80 : 0x00;
+   memory_ram[MSTAT] = (maria_scanline < maria_displayArea.top || maria_scanline > maria_displayArea.bottom) ? 0x80 : 0x00;
    memory_ram[WSYNC] = false;
 }
 

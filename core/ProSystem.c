@@ -136,7 +136,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
    bupchip_Frame();
 
 
-   maria_scanline = maria_displayArea.bottom;  /* vblank start */
+   maria_scanline = maria_displayArea.bottom + 1;  /* vblank start */
    riot_SetInput(input);
 
 
@@ -192,7 +192,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       prosystem_cycles -= CYCLES_PER_SCANLINE;  /* overflow */
 
       maria_scanline = (maria_scanline + 1) % prosystem_scanlines;
-      if (maria_scanline == maria_displayArea.bottom)
+      if (maria_scanline == maria_displayArea.bottom + 1)
          break;
    }
 

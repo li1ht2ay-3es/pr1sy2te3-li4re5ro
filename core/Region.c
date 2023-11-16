@@ -31,8 +31,8 @@
 
 uint8_t region_type = REGION_AUTO;
 
-static const rect REGION_DISPLAY_AREA_NTSC = {0, 16, 319, 258};  /* 7800 test18 */
-static const rect REGION_DISPLAY_AREA_PAL  = {0, 16, 319, 308};
+static const rect REGION_DISPLAY_AREA_NTSC = {0, 16, 319, 257};  /* 7800 test18 */
+static const rect REGION_DISPLAY_AREA_PAL  = {0, 16, 319, 307};
 
 static const rect REGION_VISIBLE_AREA_NTSC = {0, 26, 319, 249};  /* Screen Safe */
 static const rect REGION_VISIBLE_AREA_PAL  = {0, 26, 319, 297};
