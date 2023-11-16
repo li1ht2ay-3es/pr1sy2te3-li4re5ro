@@ -101,7 +101,7 @@ void mixer_Run(int cycles)
 
       mixer_cycles -= mixer_tick;
       mixer_cycles2 -= mixer_tick2;
-      if (mixer_cycles2 < 0)  /* borrow */
+      if (mixer_cycles2 <= 0)  /* borrow */
       {
          mixer_cycles--;
          mixer_cycles2 += mixer_rate;
@@ -119,6 +119,12 @@ void mixer_FrameEnd(void)
    static int lowpass_output = 0;
    int factor_a = (0 * 0x10000) / 100;
    int factor_b = 0x10000 - factor_a;
+
+
+#if 0
+   if (mixer_outCount != tia_outCount)  /* debug assert */
+	   mixer_outCount += 0;
+#endif
 
 
    for (index = 0; index < tia_outCount; index += 2)
@@ -150,6 +156,4 @@ void mixer_FrameEnd(void)
       mixer_buffer[index*2 + 0] = left;
       mixer_buffer[index*2 + 1] = right;
    }
-
-   index = 0;
 }
