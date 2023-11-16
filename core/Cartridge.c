@@ -362,7 +362,7 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
 
 
    cartridge_type = 0;
-   cartridge_region = REGION_NTSC;
+   cartridge_region = 0;
 
    cartridge_bankset = 0;
    cartridge_exrom = 0;

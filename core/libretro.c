@@ -369,15 +369,15 @@ static void check_variables(bool first_run)
    var.key   = "prosystem_console_region";
    var.value = NULL;
 
-   console_region = REGION_AUTO;
+   region_type = REGION_AUTO;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
 	  if (strcmp(var.value, "NTSC") == 0)
-	     console_region = REGION_NTSC;
+	     region_type = REGION_NTSC;
 
 	  else if (strcmp(var.value, "PAL") == 0)
-	     console_region = REGION_PAL;
+	     region_type = REGION_PAL;
    }
 }
 
@@ -559,15 +559,6 @@ bool retro_load_game(const struct retro_game_info *info)
    
    if (bios_Load(biospath))
       bios_enabled = true;
-
-   if (console_region != 2)
-   {
-      if (console_region == 0)
-         region_type = REGION_NTSC;
-
-      else if (console_region == 1)
-         region_type = REGION_PAL;
-   }
 
    prosystem_SetRate(audio_rate);
    prosystem_Reset();
