@@ -268,11 +268,7 @@ static void maria_StoreLineRAM(void)
 
    memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
 
-
-   if ((maria_ctrl & 0x60) != 0x40)  /* dma off */
-      return;
-
-
+		 
    maria_AddCycles(16);  /* dma startup + shutdown time */
 
    while (maria_cycles < MARIA_CYCLE_LIMIT)  /* render list */
@@ -309,8 +305,6 @@ static void maria_StoreLineRAM(void)
       maria_horizontal = maria_ReadByte(list_dp.w++);
       maria_AddCycles(8);
 
-//if (maria_pp.w >= 0xa000 && maria_pp.w < 0xb000)
-	//maria_pp.w = 0x8000;
 
       for (index = 0; index < width; index++)
       {
@@ -404,27 +398,42 @@ static int maria_RenderScanline(void)
    {
       maria_dpp.w = 0;  /* reset */
       maria_offset = 0;
+
+      maria_LoadDisplayList();
+      memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
       return 0;
    }
 
-   else if (maria_scanline >= maria_displayArea.bottom+1)  /* vblank bottom */
+   else if (maria_scanline >= maria_displayArea.bottom)  /* vblank bottom */
       return 0;
 
    else
    {
+      if (!maria_dma)
+	  {
+         memset(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)), 0, MARIA_LINERAM_SIZE * 2);
+         return 0;
+	  }
+
       if (!maria_dma || maria_scanline == maria_displayArea.bottom)
          return 0;
 
 
+      if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
+	  {
+         maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
+      }
+
+
       if (maria_dpp.w == 0)  /* dma start */
 	  {
-         maria_LoadDisplayList();
-         maria_StoreLineRAM();  /* build next line */
+         //maria_LoadDisplayList();
+         //maria_StoreLineRAM();  /* build next line */
 	  }
 
       else if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
 	  {
-         maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
+         //maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
          maria_StoreLineRAM();  /* build next line */
 	  }
 
@@ -452,9 +461,7 @@ INLINE int maria_Run(void)
 
 INLINE void maria_Scanline(void)
 {
-   if (maria_scanline == maria_displayArea.top)  /* render start */
-      memory_ram[MSTAT] = 0x00;
-
+   memory_ram[MSTAT] = (maria_scanline < maria_displayArea.top || maria_scanline >= maria_displayArea.bottom) ? 0x80 : 0x00;
    memory_ram[WSYNC] = false;
 }
 

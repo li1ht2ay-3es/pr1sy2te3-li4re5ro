@@ -121,7 +121,7 @@ void mixer_FrameEnd(void)
    int factor_b = 0x10000 - factor_a;
 
 
-#if 0
+#if 1
    {
       static int frame = 0;
       frame++;
