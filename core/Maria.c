@@ -34,8 +34,8 @@
 #define MARIA_LINERAM_SIZE 160
 #define MARIA_CYCLE_LIMIT 430
 
-rect maria_displayArea = {0, 16, 319, 258};
-rect maria_visibleArea = {0, 26, 319, 250};
+rect maria_displayArea = {0, 16, 319, 257};
+rect maria_visibleArea = {0, 26, 319, 249};
 
 uint8_t maria_surface[MARIA_SURFACE_SIZE] = {0};
 uint32_t maria_scanline = 0;
@@ -407,12 +407,12 @@ static int maria_RenderScanline(void)
       return 0;
    }
 
-   else if (maria_scanline >= maria_displayArea.bottom)  /* vblank bottom */
+   else if (maria_scanline >= maria_displayArea.bottom+1)  /* vblank bottom */
       return 0;
 
    else
    {
-      if (!maria_dma || maria_scanline > maria_displayArea.bottom)
+      if (!maria_dma || maria_scanline == maria_displayArea.bottom)
          return 0;
 
 
