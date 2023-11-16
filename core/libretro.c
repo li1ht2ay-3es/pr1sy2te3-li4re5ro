@@ -581,8 +581,8 @@ bool retro_load_game(const struct retro_game_info *info)
    if (bios_Load(biospath))
       bios_enabled = true;
 
-   prosystem_SetRate(audio_rate);
    prosystem_Reset();
+   prosystem_SetRate(audio_rate);
 
    display_ResetPalette();
 
@@ -700,7 +700,7 @@ void retro_run(void)
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
 
-   buffer      = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
+   buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
 
    if (videoPixelBytes == 2)
    {
