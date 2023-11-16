@@ -673,12 +673,21 @@ void retro_reset(void)
    prosystem_Reset();
 }
 
+#include <stdio.h>
+void debug(void)
+{
+   static FILE *fp;
+   if (!fp)
+      fp = fopen("log.txt", "w");
+
+   fprintf(fp, "%X %X - %X\n", tia_outCount, pokey_outCount, mixer_outCount);
+}
+
 void retro_run(void)
 {
    const uint8_t *buffer = NULL;
    uint32_t video_pitch  = 320;
    bool options_updated  = false;
-   int index = 0;
 
    videoWidth  = Rect_GetLength(&maria_visibleArea);
    videoHeight = Rect_GetHeight(&maria_visibleArea);
@@ -703,7 +712,5 @@ void retro_run(void)
    }
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
-
-   while (mixer_outCount > 0)
-      mixer_outCount -= audio_batch_cb(mixer_buffer + index * 4, mixer_outCount);
+   audio_batch_cb(mixer_buffer, mixer_outCount);
 }
