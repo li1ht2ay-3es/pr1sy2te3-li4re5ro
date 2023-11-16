@@ -254,6 +254,7 @@ static void tia_Tick()
 
 
    outvol *= 0x400;  /* 10-bit expansion */
+   outvol = 0;
 
 
    index = out_tick;
