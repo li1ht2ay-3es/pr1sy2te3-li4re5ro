@@ -125,10 +125,10 @@ static int pokey_lpfOld[4];
 static int pokey_lpfNew[4];
 
 /* #define POKEY_LOWPASS_LIMIT 1  /* 315/88/2 MHz*/
-/* #define POKEY_LOWPASS_LIMIT 80  /* 1.789 MHz @ 22362 */
+#define POKEY_LOWPASS_LIMIT 80  /* 1.789 MHz @ 22362 */
 /* #define POKEY_LOWPASS_LIMIT 95  /* 1.789 MHz @ 18839 */
 /* #define POKEY_LOWPASS_LIMIT 112  /* 1.789 MHz @ 15980 */
-#define POKEY_LOWPASS_LIMIT 120  /* 1.789 MHz @ 14914 */
+/* #define POKEY_LOWPASS_LIMIT 120  /* 1.789 MHz @ 14914 */
 /* #define POKEY_LOWPASS_LIMIT 128  /* 1.789 MHz @ 13984 */
 int pokey_lowpass_limit = POKEY_LOWPASS_LIMIT;
 
@@ -493,8 +493,7 @@ void pokey_Output(void)
    int index;
    int currentValue = 0;
    int active = 4;
-   /* int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
-   int adjust[5] = { 0, 0, 0x300, 0x200, 0x100 };  /* 10-bit, 9.5-bit, 9-bit expansion */
+   int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
 
 
    if (!cartridge_pokey)
@@ -510,8 +509,8 @@ void pokey_Output(void)
 
    currentValue *= adjust[active];  /* 15-bit unsigned */
 
-   max = (max < currentValue) ? currentValue : max;
+   /* max = (max < currentValue) ? currentValue : max;  /* debug */
 
-   pokey_buffer[pokey_outCount] = currentValue * 1;
+   pokey_buffer[pokey_outCount] = currentValue;
    pokey_outCount++;
 }
