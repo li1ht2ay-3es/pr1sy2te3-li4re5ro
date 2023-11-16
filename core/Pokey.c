@@ -493,7 +493,8 @@ void pokey_Output(void)
    int index;
    int currentValue = 0;
    int active = 4;
-   int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
+   /* int adjust[5] = { 0, 0, 0x400, 0x300, 0x200 };  /* 10-bit, 9.5-bit, 9-bit expansion */
+   int adjust[5] = { 0, 0, 0x300, 0x200, 0x100 };  /* 10-bit, 9.5-bit, 9-bit expansion */
 
 
    if (!cartridge_pokey)
