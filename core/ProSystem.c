@@ -115,7 +115,7 @@ static void prosystem_FireLightGun()
 */
 }
 
-static void prosystem_Run(int cycles)
+void prosystem_Run(int cycles)
 {
    prosystem_cycles += cycles;
 
@@ -221,7 +221,7 @@ bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves)
       return false;
    prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
 
-   prosystem_ReadStatePtr(digest, 32);
+   prosystem_ReadStatePtr((uint8_t *) digest, 32);
 
    maria_LoadState();
    memory_LoadState();
@@ -241,7 +241,7 @@ int prosystem_SaveState(uint8_t *buffer, bool fast_saves)
    memcpy(prosystem_statePtr, PRO_SYSTEM_STATE_HEADER, sizeof(PRO_SYSTEM_STATE_HEADER)-1);
    prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
 
-   prosystem_WriteStatePtr(cartridge_digest, 32);
+   prosystem_WriteStatePtr((uint8_t *) cartridge_digest, 32);
 
    maria_SaveState();
    memory_SaveState();
