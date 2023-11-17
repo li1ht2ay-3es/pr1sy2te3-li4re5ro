@@ -122,7 +122,7 @@ static INLINE void maria_StoreCell(uint8_t data)
 {
 if (maria_scanline >= 206 && maria_scanline < 210)
 {
-	maria_lineRAM[maria_horizontal] = 1;
+	//maria_lineRAM[maria_horizontal] = 1;
 	//return;
 }
 
