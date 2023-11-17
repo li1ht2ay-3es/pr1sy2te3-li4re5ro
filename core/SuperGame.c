@@ -59,10 +59,7 @@ static uint32_t prg_size;
 static uint8_t *prg_start, *prg0_start;
 static uint8_t *chr_start, *chr0_start;
 
-static struct
-{
-   uint8_t bank;
-} supergame_s;
+static uint8_t mapper_bank;
 
 
 void supergame_MapBios(void)
@@ -86,8 +83,8 @@ void supergame_Map(void)
    }
 
 
-   sally_SetRead(0x8000, 0xc000, prg_start + supergame_s.bank * 0x4000);
-   maria_SetRead(0x8000, 0xc000, chr_start + supergame_s.bank * 0x4000);
+   sally_SetRead(0x8000, 0xc000, prg_start + mapper_bank * 0x4000);
+   maria_SetRead(0x8000, 0xc000, chr_start + mapper_bank * 0x4000);
 
    sally_SetRead(0xc000, 0x10000, prg_start + prg_size - 0x4000);
    maria_SetRead(0xc000, 0x10000, chr_start + prg_size - 0x4000);
@@ -112,14 +109,14 @@ void supergame_Reset(void)
 
    max_bank = prg_size / 0x4000;
 
-   supergame_s.bank = 0;
+   mapper_bank = 0;
 
    supergame_Map();
 }
 
 uint8_t supergame_Read(uint16_t address)
 {
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void supergame_Write(uint16_t address, uint8_t data)
@@ -129,12 +126,12 @@ void supergame_Write(uint16_t address, uint8_t data)
       if (max_bank < 8 && data >= max_bank)  /* high mirror */
          data -= max_bank;
 
-      if (supergame_s.bank == data)  /* skip remap */
+      if (mapper_bank == data)  /* skip remap */
          return;
 
       if (data < max_bank)
       {
-         supergame_s.bank = data;
+         mapper_bank = data;
 
          sally_SetRead(0x8000, 0xc000, prg_start + data * 0x4000);
          maria_SetRead(0x8000, 0xc000, chr_start + data * 0x4000);
@@ -144,12 +141,10 @@ void supergame_Write(uint16_t address, uint8_t data)
 
 void supergame_LoadState(void)
 {
-   memcpy(&supergame_s, prosystem_statePtr, sizeof(supergame_s));
-   prosystem_statePtr += sizeof(supergame_s);
+   mapper_bank = prosystem_ReadState8();
 }
 
 void supergame_SaveState(void)
 {
-   memcpy(prosystem_statePtr, &supergame_s, sizeof(supergame_s));
-   prosystem_statePtr += sizeof(supergame_s);
+   prosystem_WriteState8(mapper_bank);
 }

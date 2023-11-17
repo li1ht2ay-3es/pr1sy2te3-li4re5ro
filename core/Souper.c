@@ -141,7 +141,7 @@ void souper_Reset(void)
 
 uint8_t souper_Read(uint16_t address)
 {
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void souper_Write(uint16_t address, uint8_t data)
@@ -167,12 +167,10 @@ void souper_Write(uint16_t address, uint8_t data)
 
 void souper_LoadState(void)
 {
-   memcpy(memory_ram + 0x8000, prosystem_statePtr, 8);
-   prosystem_statePtr += 8;
+   prosystem_ReadStatePtr(memory_ram + 0x8000, 8);
 }
 
 void souper_SaveState(void)
 {
-   memcpy(prosystem_statePtr, memory_ram + 0x8000, 8);
-   prosystem_statePtr += 8;
+   prosystem_WriteStatePtr(memory_ram + 0x8000, 8);
 }

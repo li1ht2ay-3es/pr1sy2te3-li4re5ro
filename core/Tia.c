@@ -138,6 +138,8 @@ void tia_Reset(void)
 {
    uint32_t index;
 
+   memset(memory_ram, 0, 0x20);
+
    for (index = 0; index < 2; index++)
    {
       tia_volume[index] = 0;
@@ -150,6 +152,7 @@ void tia_Reset(void)
    }
 
    out_clock = 0;
+   out_clock2 = out_rate;
 }
 
 static void update_channel(int channel)
@@ -194,7 +197,7 @@ INLINE uint8_t tia_Read(uint16_t address)
       return memory_ram[address];
    }
 
-   return address & 0xff;  /* Open bus? */
+   return memory_ReadOpenBus(address);
 }
 
 INLINE void tia_Write(uint16_t address, uint8_t data)
@@ -230,6 +233,10 @@ INLINE void tia_Write(uint16_t address, uint8_t data)
    case AUDV1:
       tia_audv[channel] = data & 0x0F;
       update_channel(channel);
+      break;
+
+   default:
+      memory_WriteOpenBus(address, data);
       break;
    }
 }
@@ -291,12 +298,14 @@ INLINE void tia_Run()
       return;
 
    tia_Tick();
+
    out_clock++;
 }
 
 INLINE void tia_ScanlineEnd()
 {
    tia_Tick();  /* cycle 454 */
+
    out_clock--;
 }
 

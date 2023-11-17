@@ -34,10 +34,7 @@ static uint32_t prg_size;
 static uint8_t *prg_start;
 static uint8_t *chr_start;
 
-static struct
-{
-   uint8_t bank;
-} activision_s;
+static uint8_t mapper_bank;
 
 
 void activision_MapBios(void)
@@ -57,8 +54,8 @@ void activision_Map(void)
    sally_SetRead(0x8000, 0xa000, prg_start + prg_size - 0x2000);
    maria_SetRead(0x8000, 0xa000, chr_start + prg_size - 0x2000);
 
-   sally_SetRead(0xa000, 0xe000, prg_start + activision_s.bank * 0x4000);
-   maria_SetRead(0xa000, 0xe000, chr_start + activision_s.bank * 0x4000);
+   sally_SetRead(0xa000, 0xe000, prg_start + mapper_bank * 0x4000);
+   maria_SetRead(0xa000, 0xe000, chr_start + mapper_bank * 0x4000);
 
    sally_SetRead(0xe000, 0x10000, prg_start + prg_size - 0x4000);
    maria_SetRead(0xe000, 0x10000, chr_start + prg_size - 0x4000);
@@ -73,14 +70,14 @@ void activision_Reset(void)
 
    max_bank = prg_size / 0x4000;
 
-   activision_s.bank = 0;
+   mapper_bank = 0;
 
    activision_Map();
 }
 
 uint8_t activision_Read(uint16_t address)
 {
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void activision_Write(uint16_t address, uint8_t data)
@@ -89,12 +86,12 @@ void activision_Write(uint16_t address, uint8_t data)
    {
       data = address & 0x7f;
 
-      if (activision_s.bank == data)  /* skip remap */
+      if (mapper_bank == data)  /* skip remap */
          return;
 
       if (data < max_bank)
       {
-         activision_s.bank = data;
+         mapper_bank = data;
 
          sally_SetRead(0xa000, 0xe000, prg_start + data * 0x4000);
 		 maria_SetRead(0xa000, 0xe000, chr_start + data * 0x4000);
@@ -104,12 +101,10 @@ void activision_Write(uint16_t address, uint8_t data)
 
 void activision_LoadState(void)
 {
-   memcpy(&activision_s, prosystem_statePtr, sizeof(activision_s));
-   prosystem_statePtr += sizeof(activision_s);
+   mapper_bank = prosystem_ReadState8();
 }
 
 void activision_SaveState(void)
 {
-   memcpy(prosystem_statePtr, &activision_s, sizeof(activision_s));
-   prosystem_statePtr += sizeof(activision_s);
+   prosystem_WriteState8(mapper_bank);
 }

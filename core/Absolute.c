@@ -34,10 +34,7 @@ static uint32_t prg_size;
 static uint8_t *prg_start;
 static uint8_t *chr_start;
 
-static struct
-{
-   uint8_t bank;
-} absolute_s;
+static uint8_t mapper_bank;
 
 
 void absolute_MapBios(void)
@@ -48,8 +45,8 @@ void absolute_MapBios(void)
 
 void absolute_Map(void)
 {
-   sally_SetRead(0x4000, 0x8000, prg_start + (absolute_s.bank-1) * 0x4000);
-   maria_SetRead(0x4000, 0x8000, chr_start + (absolute_s.bank-1) * 0x4000);
+   sally_SetRead(0x4000, 0x8000, prg_start + (mapper_bank-1) * 0x4000);
+   maria_SetRead(0x4000, 0x8000, chr_start + (mapper_bank-1) * 0x4000);
 
    sally_SetRead(0x8000, 0x10000, prg_start + prg_size - 0x8000);
    maria_SetRead(0x8000, 0x10000, chr_start + prg_size - 0x8000);
@@ -64,26 +61,26 @@ void absolute_Reset(void)
 
    max_bank = prg_size / 0x4000;
 
-   absolute_s.bank = 1;
+   mapper_bank = 1;
 
    absolute_Map();
 }
 
 uint8_t absolute_Read(uint16_t address)
 {
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void absolute_Write(uint16_t address, uint8_t data)
 {
    if (address == 0x8000)
    {
-      if (absolute_s.bank == data)  /* skip remap */
+      if (mapper_bank == data)  /* skip remap */
          return;
 
       if (data > 0 && data <= max_bank-2)
       {
-         absolute_s.bank = data;
+         mapper_bank = data;
 
          sally_SetRead(0x4000, 0x8000, prg_start + (data-1) * 0x4000);
          maria_SetRead(0x4000, 0x8000, chr_start + (data-1) * 0x4000);
@@ -93,12 +90,10 @@ void absolute_Write(uint16_t address, uint8_t data)
 
 void absolute_LoadState(void)
 {
-   memcpy(&absolute_s, prosystem_statePtr, sizeof(absolute_s));
-   prosystem_statePtr += sizeof(absolute_s);
+   mapper_bank = prosystem_ReadState8();
 }
 
 void absolute_SaveState(void)
 {
-   memcpy(prosystem_statePtr, &absolute_s, sizeof(absolute_s));
-   prosystem_statePtr += sizeof(absolute_s);
+   prosystem_WriteState8(mapper_bank);
 }

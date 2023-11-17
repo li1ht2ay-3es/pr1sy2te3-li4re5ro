@@ -77,7 +77,7 @@ void linear_Reset(void)
 
 uint8_t linear_Read(uint16_t address)
 {
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void linear_Write(uint16_t address, uint8_t data)

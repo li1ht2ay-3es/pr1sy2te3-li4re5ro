@@ -138,6 +138,7 @@ static void cartridge_ReadHeader(const uint8_t* header)
 {
    uint16_t cardtype;
 
+
    cartridge_size  = header[49] << 24;
    cartridge_size |= header[50] << 16;
    cartridge_size |= header[51] << 8;
@@ -194,74 +195,18 @@ static void cartridge_ReadHeader(const uint8_t* header)
    if (cardtype & 0x8000)  /* pokey 1 */
       cartridge_pokey = POKEY_AT_800;
 
-/*
-    // ========================
-    // 0 = none
-    // 1 = 7800 joystick
-    // 2 = lightgun
-    // 3 = paddle
-    // 4 = trakball
-    // 5 = 2600 joystick
-    // 6 = 2600 driving
-    // 7 = 2600 keypad
-    // 8 = ST mouse
-    // 9 = Amiga mouse
-    // 10 = AtariVox/SaveKey
-    // 11 = SNES2Atari
-    // ========================
-  switch(header[55])
-  {
-      case 1:
-          myCartInfo.cardctrl1 = CARTRIDGE_CONTROLLER_JOYSTICK;
-          break;
-      case 2:
-          myCartInfo.cardctrl1 = CARTRIDGE_CONTROLLER_LIGHTGUN;
-          break;
-      case 3:
-          myCartInfo.cardctrl1 = CARTRIDGE_CONTROLLER_PADDLES;
-          break;
-      case 11:
-          myCartInfo.cardctrl1 = CARTRIDGE_CONTROLLER_SNES2ATARI;
-          break;
-      default:
-          myCartInfo.cardctrl1 = CARTRIDGE_CONTROLLER_JOYSTICK;
-          break;
-  }
-
-  switch(header[56])
-  {
-      case 1:
-          myCartInfo.cardctrl2 = CARTRIDGE_CONTROLLER_JOYSTICK;
-          break;
-      case 2:
-          myCartInfo.cardctrl2 = CARTRIDGE_CONTROLLER_LIGHTGUN;
-          break;
-      case 3:
-          myCartInfo.cardctrl2 = CARTRIDGE_CONTROLLER_PADDLES;
-          break;
-      case 11:
-          myCartInfo.cardctrl2 = CARTRIDGE_CONTROLLER_SNES2ATARI;
-          break;
-      default:
-          myCartInfo.cardctrl2 = CARTRIDGE_CONTROLLER_JOYSTICK;
-          break;
-  }
-    
-  myCartInfo.region = header[57] & 1;
-  myCartInfo.hsc = ((header[58] & 1) ? HSC_YES:HSC_NO);
-  last_bank = 255;
-  last_ex_ram_bank = 0;
-  ex_ram_bank = 0;
-  last_ex_ram_bank_df = 0;
-  write_only_pokey_at_4000 = false;
-  ex_ram_bank_df = 0;
-*/
 
    cartridge_controller[0] = header[55];
    cartridge_controller[1] = header[56];
    cartridge_region        = header[57];
    cartridge_flags         = 0;
    cartridge_bupchip       = cartridge_type == CARTRIDGE_TYPE_SOUPER;
+
+   if (header[0] < 3)  /* version 1-2 */
+   {
+      if (cartridge_type == CARTRIDGE_TYPE_SUPERGAME && !cartridge_exram)  /* v3-4 assumptions */
+         cartridge_exfix = 1;
+   }
 }
 
 uint8_t cartridge_LoadROM(uint32_t address)

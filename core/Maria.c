@@ -49,7 +49,7 @@ static pair maria_pp;
 
 static uint8_t maria_horizontal;
 static uint8_t maria_palette;
-static int8_t maria_offset;
+static uint8_t maria_offset;
 static uint16_t maria_holey;
 static uint8_t maria_wmode;
 static uint8_t maria_ctrl;
@@ -120,12 +120,6 @@ static INLINE uint8_t maria_ReadByte(uint16_t address)
 
 static INLINE void maria_StoreCell(uint8_t data)
 {
-if (maria_scanline >= 206 && maria_scanline < 210)
-{
-	//maria_lineRAM[maria_horizontal] = 1;
-	//return;
-}
-
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
       if (data & 3)  /* non-transparent */
@@ -297,19 +291,14 @@ static void maria_StoreLineRAM(void)
 {
    uint32_t index;
    uint8_t cwidth = maria_ctrl & 0x10;
-   uint8_t chigh;
-   pair list_dp;
-
-
-   if(maria_offset == -1)
-	   maria_LoadDisplayList();
-
-
-   chigh = memory_ram[CHARBASE] + maria_offset;
-   list_dp = maria_dp;
+   uint8_t chigh = memory_ram[CHARBASE] + maria_offset;
+   pair list_dp = maria_dp;
 
 
    memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
+
+   if (!maria_dma)
+      return;
 
 
    maria_AddCycles(16);  /* dma startup + shutdown time */
@@ -400,8 +389,17 @@ static void maria_StoreLineRAM(void)
    }
 
 
+/*
+TODO: Add overflow cycles to next scanline = delay
+*/
+
+
    if (!maria_offset--)  /* zone finished */
+   {
       maria_AddCycles(6+4);  /* extra shutdown time */
+
+      maria_LoadDisplayList();
+   }
 }
 
 static int maria_RenderScanline(void)
@@ -413,25 +411,17 @@ static int maria_RenderScanline(void)
 
 
    if (maria_scanline >= maria_visibleArea.top && maria_scanline <= maria_visibleArea.bottom)  /* draw to screen */
-   {
-      if (maria_dma)
-         maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
-
-      else
-         memset(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)), 0, MARIA_LINERAM_SIZE * 2);
-   }
+      maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
 
 
-   if (maria_scanline >= maria_displayArea.top && maria_scanline < maria_displayArea.bottom)
-   {
-      if (maria_dma)  /* build next line */
-         maria_StoreLineRAM();
-   }
+   if (maria_scanline > maria_displayArea.top && maria_scanline <= maria_displayArea.bottom)
+      maria_StoreLineRAM();
 
-   else if (maria_scanline == maria_displayArea.top-1)  /* prepare dma */
+   else if (maria_scanline == maria_displayArea.top)  /* prepare dma */
    {
       maria_dpp.w = 0;
-      maria_offset = -1;
+
+      maria_LoadDisplayList();
    } 
 
    return (maria_cycles > MARIA_CYCLE_LIMIT) ? MARIA_CYCLE_LIMIT : maria_cycles;
@@ -439,6 +429,8 @@ static int maria_RenderScanline(void)
 
 void maria_Reset(void)
 {
+   memset(memory_ram + 0x20, 0, 0x20);
+
    memset(maria_readmap, 0, sizeof(maria_readmap));
 }
 

@@ -38,6 +38,16 @@ uint8_t memory_ram[MEMORY_SIZE] = {0};
 uint8_t memory_exram[MEMORY_EXRAM_SIZE] = {0};
 uint32_t memory_exram_size = 0;
 
+uint8_t memory_ReadOpenBus(uint16_t address)
+{
+   return address >> 8;
+}
+
+void memory_WriteOpenBus(uint16_t address, uint8_t data)
+{
+   return;
+}
+
 void memory_Map(void)
 {
    sally_SetRead(0x40, 0x100, memory_ram + 0x2040);
@@ -63,6 +73,8 @@ void memory_Map(void)
 
 void memory_Reset(void)
 {
+   memset(memory_ram + 0x1800, 0, 0x1000);
+
    memory_Map();
 }
 
@@ -103,7 +115,7 @@ INLINE uint8_t memory_Read(uint16_t address)
       return cartridge_Read(address);
    }
 
-   return address & 0xff;  /* Open bus? */
+   return memory_ReadOpenBus(address);
 }
 
 INLINE void memory_Write(uint16_t address, uint8_t data)

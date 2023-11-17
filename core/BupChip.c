@@ -296,21 +296,30 @@ void bupchip_Reset(void)
 void bupchip_LoadState(void)
 {
    uint8_t new_song;
+   uint8_t new_volume;
+   uint8_t new_flags;
 
    new_song = prosystem_ReadState8();
-   bupchip_volume = prosystem_ReadState8();
-   bupchip_flags = prosystem_ReadState8();
+   new_volume = prosystem_ReadState8();
+   new_flags = prosystem_ReadState8();
 
 
    if (new_song != bupchip_current_song)
+   {
+      ct_stopAll();
       bupchip_Play(new_song);
+   }
 
-   ct_attenMusic(bupchip_volume);
+   ct_attenMusic(new_volume);
 
-   if ((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+   if ((new_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+   {
+      bupchip_Pause();
       bupchip_Stop();
+   }
+
    else
-      (bupchip_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
+      (new_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
 }
 
 void bupchip_SaveState(void)

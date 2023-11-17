@@ -115,15 +115,18 @@ static void prosystem_FireLightGun()
 */
 }
 
-void prosystem_Run(int cycles)
+static void prosystem_Run(int cycles)
 {
    prosystem_cycles += cycles;
 
    riot_Run(cycles);
-   cartridge_Run(cycles);
-   mixer_Run(cycles);
-
    tia_Run();
+
+   cartridge_Run(cycles);
+
+
+   prosystem_cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
+   mixer_Run(cycles + sally_SlowCycles());
 }
 
 void prosystem_ExecuteFrame(const uint8_t* input)
@@ -158,10 +161,9 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          cycles = sally_Run();
          cycles += (!cycles) ? 28 - prosystem_cycles : 0;  /* wsync */
-         cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
 
 		 prosystem_Run(cycles);
-      }
+	  }
 
 
       /* 28-x = maria render */

@@ -190,7 +190,7 @@ uint8_t mapper_Read(uint16_t address)
          return pokey_Read(address);
    }
 
-   return address >> 8;  /* open bus? */
+   return memory_ReadOpenBus(address);
 }
 
 void mapper_Write(uint16_t address, uint8_t data)

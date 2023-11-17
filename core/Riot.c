@@ -29,25 +29,24 @@
 #include "Equates.h"
 #include "Memory.h"
 
-uint8_t riot_dra;
-uint8_t riot_drb;
+static uint8_t riot_dra;
+static uint8_t riot_drb;
 
-uint8_t riot_active;
-uint8_t riot_elapsed;
+static uint8_t riot_active;
+static uint8_t riot_elapsed;
 
-int16_t riot_timer;
-uint8_t riot_intervals;
+static int16_t riot_timer;
+static uint8_t riot_intervals;
 
-int32_t riot_currentTime;
-uint16_t riot_clocks;
+static int32_t riot_currentTime;
+static uint16_t riot_clocks;
 
 static uint32_t riot_halfcycle = 0;
 
 
 void riot_Reset(void)
 {
-   riot_dra = 0;
-   riot_drb = 0;
+   memset(memory_ram + 0x280, 0, 0x20);
 
    riot_timer = TIM64T; 
    riot_intervals = 0;
@@ -93,19 +92,19 @@ void riot_SetInput(const uint8_t* input)
      SWCHA is directionals.  SWCHB is console switches and button mode.
      button signals are in high bits of INPT0-5.*/
 
-   memory_ram[SWCHA] = ((~memory_ram[CTLSWA]) | riot_dra);	/*SWCHA as driven by RIOT*/
+   riot_dra = ((~memory_ram[CTLSWA]) | memory_ram[SWCHA]);	/*SWCHA as driven by RIOT*/
 
 
    /*now console switches will force bits to ground:*/
-   if (input[0x00]) memory_ram[SWCHA] &= ~0x80;
-   if (input[0x01]) memory_ram[SWCHA] &= ~0x40;
-   if (input[0x02]) memory_ram[SWCHA] &= ~0x20;
-   if (input[0x03]) memory_ram[SWCHA] &= ~0x10;
+   if (input[0x00]) riot_dra &= ~0x80;
+   if (input[0x01]) riot_dra &= ~0x40;
+   if (input[0x02]) riot_dra &= ~0x20;
+   if (input[0x03]) riot_dra &= ~0x10;
 
-   if (input[0x06]) memory_ram[SWCHA] &= ~0x08;
-   if (input[0x07]) memory_ram[SWCHA] &= ~0x04;
-   if (input[0x08]) memory_ram[SWCHA] &= ~0x02;
-   if (input[0x09]) memory_ram[SWCHA] &= ~0x01;
+   if (input[0x06]) riot_dra &= ~0x08;
+   if (input[0x07]) riot_dra &= ~0x04;
+   if (input[0x08]) riot_dra &= ~0x02;
+   if (input[0x09]) riot_dra &= ~0x01;
 
 
    /*Switches can always push the appropriate bit of SWCHA to ground, as in above code block.
@@ -131,15 +130,15 @@ void riot_SetInput(const uint8_t* input)
      From the default state after boot, simply changing CTLSWB to 1 will result in 2 button mode.
      Some games rely on this, and don't actually store anything to SWCHB.*/
 
-   memory_ram[SWCHB] = ((~memory_ram[CTLSWB]) | riot_drb);	/*SWCHB as driven by RIOT*/
+   riot_drb = (~memory_ram[CTLSWB]) | memory_ram[SWCHB];	/*SWCHB as driven by RIOT*/
 
 
    /*now the console switches can force certain bits to ground:*/
-   if (input[0x0c])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x01;
-   if (input[0x0d])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x02;
-   if (input[0x0e])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x08;
-   if (input[0x0f])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x40;
-   if (input[0x10])	memory_ram[SWCHB] = memory_ram[SWCHB] &~ 0x80;
+   if (input[0x0c])	riot_drb &= ~0x01;
+   if (input[0x0d])	riot_drb &= ~0x02;
+   if (input[0x0e])	riot_drb &= ~0x08;
+   if (input[0x0f])	riot_drb &= ~0x40;
+   if (input[0x10])	riot_drb &= ~0x80;
 
 
    /*When in 1 button mode, only the legacy 2600 button signal is active.  The others stay off.
@@ -147,7 +146,7 @@ void riot_SetInput(const uint8_t* input)
 see:  http://www.atariage.com/forums/index.php?showtopic=127162
 also see 7800 schematic and RIOT datasheet  */
 
-   if (memory_ram[SWCHB] & 0x04)	 /* first player in 1 button mode */
+   if (riot_drb & 0x04)	 /* first player in 1 button mode */
    {
       memory_ram[INPT0] &= 0x7f;     /* new style buttons are always off in this mode */
       memory_ram[INPT1] &= 0x7f;
@@ -165,7 +164,7 @@ also see 7800 schematic and RIOT datasheet  */
 
 
    /*now repeat for 2nd player*/
-   if (memory_ram[SWCHB] & 0x10)
+   if (riot_drb & 0x10)
    {
       memory_ram[INPT2] &= 0x7f;
       memory_ram[INPT3] &= 0x7f;
@@ -203,8 +202,12 @@ INLINE uint8_t riot_Read(uint16_t address)
    switch(address)
    {
    case SWCHA:
-   case CTLSWA:
+      return riot_dra;
+
    case SWCHB:
+      return riot_drb;
+
+   case CTLSWA:
    case CTLSWB:
 	   return memory_ram[address];
 
@@ -220,7 +223,7 @@ INLINE uint8_t riot_Read(uint16_t address)
       return oldval;
    }
 
-   return address & 0xff;  /* Open bus? */
+   return memory_ReadOpenBus(address);
 }
 
 INLINE void riot_Write(uint16_t address, uint8_t data)
@@ -229,14 +232,8 @@ INLINE void riot_Write(uint16_t address, uint8_t data)
    switch(address)
    {
    case SWCHA:
-      riot_dra = data;
-      break;
-
-   case SWCHB:
-      riot_drb = data;
-      break;
-
    case CTLSWA:
+   case SWCHB:
    case CTLSWB:
       memory_ram[address] = data;
       break;
@@ -250,6 +247,10 @@ INLINE void riot_Write(uint16_t address, uint8_t data)
    case TIM64T | 0x8:
    case T1024T | 0x8:
       riot_SetTimer(address, data);
+      break;
+
+   default:
+      memory_WriteOpenBus(address, data);
       break;
    }
 }
@@ -309,8 +310,6 @@ void riot_LoadState(void)
 {
    prosystem_ReadStatePtr(memory_ram + 0x280, 0x20);
 
-   riot_dra = prosystem_ReadState8();
-   riot_drb = prosystem_ReadState8();
    riot_active = prosystem_ReadState8();
    riot_elapsed = prosystem_ReadState8();
    riot_timer = prosystem_ReadState16();
@@ -323,8 +322,6 @@ void riot_SaveState(void)
 {
    prosystem_WriteStatePtr(memory_ram + 0x280, 0x20);
 
-   prosystem_WriteState8(riot_dra);
-   prosystem_WriteState8(riot_drb);
    prosystem_WriteState8(riot_active);
    prosystem_WriteState8(riot_elapsed);
    prosystem_WriteState16(riot_timer);

@@ -121,7 +121,7 @@ void mixer_FrameEnd(void)
    int factor_b = 0x10000 - factor_a;
 
 
-#if 1
+#if 0
    {
       static int frame = 0;
       frame++;
@@ -159,7 +159,7 @@ void mixer_FrameEnd(void)
       lowpass_output = left;
 
 
-      mixer_buffer[index*2 + 0] = left;
-      mixer_buffer[index*2 + 1] = right;
+      mixer_buffer[index*2 + 0] = (int16_t) left;
+      mixer_buffer[index*2 + 1] = (int16_t) right;
    }
 }
