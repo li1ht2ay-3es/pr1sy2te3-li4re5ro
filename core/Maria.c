@@ -120,6 +120,12 @@ static INLINE uint8_t maria_ReadByte(uint16_t address)
 
 static INLINE void maria_StoreCell(uint8_t data)
 {
+if (maria_scanline >= 206 && maria_scanline < 210)
+{
+	maria_lineRAM[maria_horizontal] = 1;
+	//return;
+}
+
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
       if (data & 3)  /* non-transparent */
@@ -258,17 +264,54 @@ static void maria_WriteLineRAM(uint8_t* buffer)
    }
 }
 
+static void maria_LoadDisplayList(void)
+{
+   uint8_t mode;
+
+   if (maria_dpp.w == 0)  /* list start */
+   {
+      maria_dpp.b.h = memory_ram[DPPH];
+      maria_dpp.b.l = memory_ram[DPPL];
+   }
+
+
+   mode = maria_ReadByte(maria_dpp.w++);
+
+   maria_holey = (mode & 0x60) << 6;
+   maria_offset = mode & 0x0F;
+   maria_nmi = mode & 0x80;
+
+   maria_dp.b.h = maria_ReadByte(maria_dpp.w++);
+   maria_dp.b.l = maria_ReadByte(maria_dpp.w++);
+
+
+   if (maria_nmi)  /* display list interrupt */
+   {
+      maria_AddCycles(1);
+
+      sally_SetNMI();
+   }
+}
+
 static void maria_StoreLineRAM(void)
 {
    uint32_t index;
    uint8_t cwidth = maria_ctrl & 0x10;
-   uint8_t chigh = memory_ram[CHARBASE] + maria_offset;
-   pair list_dp = maria_dp;
+   uint8_t chigh;
+   pair list_dp;
+
+
+   if(maria_offset == -1)
+	   maria_LoadDisplayList();
+
+
+   chigh = memory_ram[CHARBASE] + maria_offset;
+   list_dp = maria_dp;
 
 
    memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
 
-		 
+
    maria_AddCycles(16);  /* dma startup + shutdown time */
 
    while (maria_cycles < MARIA_CYCLE_LIMIT)  /* render list */
@@ -355,35 +398,10 @@ static void maria_StoreLineRAM(void)
          }
       }
    }
-}
-
-static void maria_LoadDisplayList(void)
-{
-   uint8_t mode;
-
-   if (maria_dpp.w == 0)  /* list start */
-   {
-      maria_dpp.b.h = memory_ram[DPPH];
-      maria_dpp.b.l = memory_ram[DPPL];
-   }
 
 
-   mode = maria_ReadByte(maria_dpp.w++);
-
-   maria_holey = (mode & 0x60) << 6;
-   maria_offset = mode & 0x0F;
-   maria_nmi = mode & 0x80;
-
-   maria_dp.b.h = maria_ReadByte(maria_dpp.w++);
-   maria_dp.b.l = maria_ReadByte(maria_dpp.w++);
-
-
-   if (maria_nmi)  /* display list interrupt */
-   {
-      maria_AddCycles(1);
-
-      sally_SetNMI();
-   }
+   if (!maria_offset--)  /* zone finished */
+      maria_AddCycles(6+4);  /* extra shutdown time */
 }
 
 static int maria_RenderScanline(void)
@@ -394,57 +412,27 @@ static int maria_RenderScanline(void)
    maria_cycles = 0;
 
 
-   if (maria_scanline <= maria_displayArea.top-1)  /* vblank top */
+   if (maria_scanline >= maria_visibleArea.top && maria_scanline <= maria_visibleArea.bottom)  /* draw to screen */
    {
-      maria_dpp.w = 0;  /* reset */
-      maria_offset = 0;
-
-      maria_LoadDisplayList();
-      memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
-      return 0;
-   }
-
-   else if (maria_scanline > maria_displayArea.bottom)  /* vblank bottom */
-      return 0;
-
-   else
-   {
-      if (!maria_dma)
-	  {
-         memset(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)), 0, MARIA_LINERAM_SIZE * 2);
-         return 0;
-	  }
-
-      if (!maria_dma || maria_scanline == maria_displayArea.bottom)
-         return 0;
-
-
-      if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
-	  {
+      if (maria_dma)
          maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
-      }
 
-
-      if (maria_dpp.w == 0)  /* dma start */
-	  {
-         //maria_LoadDisplayList();
-         //maria_StoreLineRAM();  /* build next line */
-	  }
-
-      else if (maria_scanline >= maria_displayArea.top)  /* draw buffered line to screen */
-	  {
-         //maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
-         maria_StoreLineRAM();  /* build next line */
-	  }
-
-
-      if (!maria_offset--)  /* zone finished */
-      {
-         maria_AddCycles(6);  /* extra shutdown time */
-
-         maria_LoadDisplayList();
-      }
+      else
+         memset(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)), 0, MARIA_LINERAM_SIZE * 2);
    }
+
+
+   if (maria_scanline >= maria_displayArea.top && maria_scanline < maria_displayArea.bottom)
+   {
+      if (maria_dma)  /* build next line */
+         maria_StoreLineRAM();
+   }
+
+   else if (maria_scanline == maria_displayArea.top-1)  /* prepare dma */
+   {
+      maria_dpp.w = 0;
+      maria_offset = -1;
+   } 
 
    return (maria_cycles > MARIA_CYCLE_LIMIT) ? MARIA_CYCLE_LIMIT : maria_cycles;
 }
@@ -467,20 +455,14 @@ INLINE void maria_Scanline(void)
 
 void maria_Clear(void)
 {
-   int index;
-
-   for (index = 0; index < MARIA_SURFACE_SIZE; index++)
-      maria_surface[index] = 0;
-}
-
-void maria_SaveState(void)
-{
-   memcpy(prosystem_statePtr, memory_ram + 0x20, 0x20);
-   prosystem_statePtr += 0x20;
 }
 
 void maria_LoadState(void)
 {
-   memcpy(memory_ram + 0x20, prosystem_statePtr, 0x20);
-   prosystem_statePtr += 0x20;
+   prosystem_ReadStatePtr(memory_ram + 0x20, 0x20);
+}
+
+void maria_SaveState(void)
+{
+   prosystem_WriteStatePtr(memory_ram + 0x20, 0x20);
 }

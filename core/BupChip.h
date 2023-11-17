@@ -45,13 +45,15 @@ extern int bupchip_InitFromCDF(const char** cdf, size_t* cdfSize, const char *wo
 extern void bupchip_ProcessAudioCommand(unsigned char data);
 extern void bupchip_Process(unsigned tick);
 extern void bupchip_Release(void);
-extern void bupchip_StateLoaded(void);
 
 extern void bupchip_Frame(void);
 extern void bupchip_ScanlineEnd(void);
 extern void bupchip_Output(void);
 extern void bupchip_Reset(void);
 extern void bupchip_SetRate(void);
+
+extern void bupchip_LoadState(void);
+extern void bupchip_SaveState(void);
 
 #ifdef __cplusplus
 }

@@ -60,6 +60,16 @@ extern void prosystem_Run(int cycles);
 extern bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves);
 extern int prosystem_SaveState(uint8_t *buffer, bool fast_saves);
 
+extern uint8_t prosystem_ReadState8(void);
+extern uint16_t prosystem_ReadState16(void);
+extern uint32_t prosystem_ReadState32(void);
+extern void prosystem_ReadStatePtr(uint8_t *ptr, uint32_t size);
+
+extern void prosystem_WriteState8(uint8_t val);
+extern void prosystem_WriteState16(uint16_t val);
+extern void prosystem_WriteState32(uint32_t val);
+extern void prosystem_WriteStatePtr(uint8_t *ptr, uint32_t size);
+
 extern int prosystem_frequency;
 extern int prosystem_scanlines;
 extern int prosystem_cycles;

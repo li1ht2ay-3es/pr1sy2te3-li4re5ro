@@ -103,14 +103,14 @@ INLINE uint8_t memory_Read(uint16_t address)
       return cartridge_Read(address);
    }
 
-   return 0xff;
+   return address & 0xff;  /* Open bus? */
 }
 
 INLINE void memory_Write(uint16_t address, uint8_t data)
 {
    int offset = address & 0xff;
 
-   switch (address >> 8)  /* bank */
+   switch (address >> 8)
    {
    case 0:
    case 1:
@@ -152,18 +152,10 @@ INLINE void memory_Write(uint16_t address, uint8_t data)
 
 void memory_LoadState(void)
 {
-   memcpy(memory_ram + 0x1800, prosystem_statePtr, 0x1000);
-   prosystem_statePtr += 0x1000;
-
-   memcpy(memory_exram, prosystem_statePtr, memory_exram_size);
-   prosystem_statePtr += memory_exram_size;
+   prosystem_ReadStatePtr(memory_ram + 0x1800, 0x1000);
 }
 
 void memory_SaveState(void)
 {
-   memcpy(prosystem_statePtr, memory_ram + 0x1800, 0x1000);
-   prosystem_statePtr += 0x1000;
-
-   memcpy(prosystem_statePtr, memory_exram, memory_exram_size);
-   prosystem_statePtr += memory_exram_size;
+   prosystem_WriteStatePtr(memory_ram + 0x1800, 0x1000);
 }

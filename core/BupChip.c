@@ -31,6 +31,7 @@
 #include "ProSystem.h"
 #include "Cartridge.h"
 #include "Maria.h"
+#include "ProSystem.h"
 #include "../bupboop/coretone/coretone.h"
 
 #define BUPCHIP_FLAGS_PLAYING   1
@@ -161,13 +162,12 @@ void bupchip_SetVolume(uint8_t volume)
 {
    int attenuation;
 
-   bupchip_volume = volume & 0x1f;
-
    /* This matches BupSystem. */
    attenuation = volume << 2;
    if((volume & 1) != 0)
       attenuation += 0x3;
 
+   bupchip_volume = attenuation;
    ct_attenMusic(attenuation);
 }
 
@@ -231,20 +231,6 @@ void bupchip_Release(void)
    bupchip_sample_data     = NULL;
 }
 
-void bupchip_StateLoaded(void)
-{
-   ct_stopAll();
-
-   if((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
-      return;
-
-   ct_playMusic(bupchip_songs[bupchip_current_song].data);
-
-   (bupchip_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
-
-   bupchip_SetVolume(bupchip_volume);
-}
-
 INLINE void bupchip_ScanlineEnd()
 {
    out_clock--;
@@ -305,4 +291,31 @@ void bupchip_Reset(void)
    out_clock2 = out_rate;
 
    memset(&bupchip_buffer, 0, sizeof(bupchip_buffer));
+}
+
+void bupchip_LoadState(void)
+{
+   uint8_t new_song;
+
+   new_song = prosystem_ReadState8();
+   bupchip_volume = prosystem_ReadState8();
+   bupchip_flags = prosystem_ReadState8();
+
+
+   if (new_song != bupchip_current_song)
+      bupchip_Play(new_song);
+
+   ct_attenMusic(bupchip_volume);
+
+   if ((bupchip_flags & BUPCHIP_FLAGS_PLAYING) == 0)
+      bupchip_Stop();
+   else
+      (bupchip_flags & BUPCHIP_FLAGS_PAUSED) ? ct_pause() : ct_resume();
+}
+
+void bupchip_SaveState(void)
+{
+   prosystem_WriteState8(bupchip_current_song);
+   prosystem_WriteState8(bupchip_volume);
+   prosystem_WriteState8(bupchip_flags);
 }

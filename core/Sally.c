@@ -31,18 +31,15 @@
 uint8_t* sally_readmap[0x400];
 uint8_t* sally_writemap[0x400];
 
-struct
-{
-   uint8_t a;
-   uint8_t x;
-   uint8_t y;
-   uint8_t p;
-   uint8_t s;
-   pair pc;
+uint8_t sally_a;
+uint8_t sally_x;
+uint8_t sally_y;
+uint8_t sally_p;
+uint8_t sally_s;
+pair sally_pc;
 
-   uint8_t nmi;
-   uint8_t irq;
-} sally_s;
+uint8_t sally_nmi;
+uint8_t sally_irq;
 
 static uint8_t sally_reset;
 static uint32_t sally_cycles;
@@ -156,48 +153,48 @@ void sally_SetWrite(uint32_t start, uint32_t stop, uint8_t *prg)
 
 static void sally_Push(uint8_t data)
 {
-   if (sally_s.s >= 0x40)
-      memory_ram[sally_s.s + 0x2100] = data;
+   if (sally_s >= 0x40)
+      memory_ram[sally_s + 0x2100] = data;
 
    else
-      memory_Write(sally_s.s, data);
+      memory_Write(sally_s, data);
 
-   sally_s.s--;
+   sally_s--;
 }
 
 static uint8_t sally_Pop(void)
 {
-   sally_s.s++;
+   sally_s++;
 
-   if (sally_s.s >= 0x40)
-      return memory_ram[sally_s.s + 0x2100];
+   if (sally_s >= 0x40)
+      return memory_ram[sally_s + 0x2100];
 
    else
-      return memory_Read(sally_s.s);
+      return memory_Read(sally_s);
 }
 
 static void sally_Flags(uint8_t data)
 {
    if(!data)
-      sally_s.p |= SALLY_FLAG.Z;
+      sally_p |= SALLY_FLAG.Z;
    else
-      sally_s.p &= ~SALLY_FLAG.Z;
+      sally_p &= ~SALLY_FLAG.Z;
 
    if(data & 0x80)
-      sally_s.p |= SALLY_FLAG.N;
+      sally_p |= SALLY_FLAG.N;
    else
-      sally_s.p &= ~SALLY_FLAG.N;
+      sally_p &= ~SALLY_FLAG.N;
 }
 
 static void sally_Branch(uint8_t branch)
 {
-   uint16_t carry = sally_s.pc.w;
+   uint16_t carry = sally_pc.w;
 
    if (!branch)
       return;
 
-   sally_s.pc.w += (int8_t) sally_address.b.l;
-   sally_cycles += ((carry ^ sally_s.pc.w) & 0x100) ? 2 : 1;
+   sally_pc.w += (int8_t) sally_address.b.l;
+   sally_cycles += ((carry ^ sally_pc.w) & 0x100) ? 2 : 1;
 }
 
 static void sally_Delay(uint8_t delta)
@@ -208,83 +205,83 @@ static void sally_Delay(uint8_t delta)
 
 static void sally_Absolute(void)
 {
-   sally_address.b.l = read_mem(sally_s.pc.w++);
-   sally_address.b.h = read_mem(sally_s.pc.w++);
+   sally_address.b.l = read_mem(sally_pc.w++);
+   sally_address.b.h = read_mem(sally_pc.w++);
 }
 
 static void sally_AbsoluteX(void)
 {
-   sally_address.b.l = read_mem(sally_s.pc.w++);
-   sally_address.b.h = read_mem(sally_s.pc.w++);
-   sally_address.w += sally_s.x;
+   sally_address.b.l = read_mem(sally_pc.w++);
+   sally_address.b.h = read_mem(sally_pc.w++);
+   sally_address.w += sally_x;
 }
 
 static void sally_AbsoluteY(void)
 {
-   sally_address.b.l = read_mem(sally_s.pc.w++);
-   sally_address.b.h = read_mem(sally_s.pc.w++);
-   sally_address.w += sally_s.y;
+   sally_address.b.l = read_mem(sally_pc.w++);
+   sally_address.b.h = read_mem(sally_pc.w++);
+   sally_address.w += sally_y;
 }
 
 static void sally_Immediate(void)
 {
-   sally_address.w = sally_s.pc.w++;
+   sally_address.w = sally_pc.w++;
 }
 
 static void sally_Indirect(void)
 {
    pair base;
-   base.b.l = read_mem(sally_s.pc.w++);
-   base.b.h = read_mem(sally_s.pc.w++);
+   base.b.l = read_mem(sally_pc.w++);
+   base.b.h = read_mem(sally_pc.w++);
    sally_address.b.l = read_mem(base.w);
    sally_address.b.h = read_mem(base.w + 1);
 }
 
 static void sally_IndirectX(void)
 {
-   sally_address.b.l = read_mem(sally_s.pc.w++) + sally_s.x;
+   sally_address.b.l = read_mem(sally_pc.w++) + sally_x;
    sally_address.b.h = read_mem(sally_address.b.l + 1);
    sally_address.b.l = read_mem(sally_address.b.l);
 }
 
 static void sally_IndirectY(void)
 {
-   sally_address.b.l = read_mem(sally_s.pc.w++);
+   sally_address.b.l = read_mem(sally_pc.w++);
    sally_address.b.h = read_mem(sally_address.b.l + 1);
    sally_address.b.l = read_mem(sally_address.b.l);
-   sally_address.w += sally_s.y;
+   sally_address.w += sally_y;
 }
 
 static void sally_Relative(void)
 {
-   sally_address.w = read_mem(sally_s.pc.w++);
+   sally_address.w = read_mem(sally_pc.w++);
 }
 
 static void sally_ZeroPage(void)
 {
-   sally_address.w = read_mem(sally_s.pc.w++);
+   sally_address.w = read_mem(sally_pc.w++);
 }
 
 static void sally_ZeroPageX(void)
 {
-   sally_address.w = read_mem(sally_s.pc.w++);
-   sally_address.b.l += sally_s.x;
+   sally_address.w = read_mem(sally_pc.w++);
+   sally_address.b.l += sally_x;
 }
 
 static void sally_ZeroPageY(void)
 {
-   sally_address.w = read_mem(sally_s.pc.w++);
-   sally_address.b.l += sally_s.y;
+   sally_address.w = read_mem(sally_pc.w++);
+   sally_address.b.l += sally_y;
 }
 
 static void sally_ADC(void)
 {
    uint8_t data = read_mem(sally_address.w);
 
-   if(sally_s.p & SALLY_FLAG.D)
+   if(sally_p & SALLY_FLAG.D)
    {
-      uint16_t al = (sally_s.a & 15) + (data & 15) + (sally_s.p & SALLY_FLAG.C);
-      uint16_t ah = (sally_s.a >> 4) + (data >> 4);
+      uint16_t al = (sally_a & 15) + (data & 15) + (sally_p & SALLY_FLAG.C);
+      uint16_t ah = (sally_a >> 4) + (data >> 4);
 
       if(al > 9)
       {
@@ -292,66 +289,66 @@ static void sally_ADC(void)
          ah++;
       }
 
-      if(!(sally_s.a + data + (sally_s.p & SALLY_FLAG.C)))
-         sally_s.p |= SALLY_FLAG.Z;
+      if(!(sally_a + data + (sally_p & SALLY_FLAG.C)))
+         sally_p |= SALLY_FLAG.Z;
       else
-         sally_s.p &= ~SALLY_FLAG.Z;
+         sally_p &= ~SALLY_FLAG.Z;
 
       if((ah & 8) != 0)
-         sally_s.p |= SALLY_FLAG.N;      
+         sally_p |= SALLY_FLAG.N;      
       else
-         sally_s.p &= ~SALLY_FLAG.N;
+         sally_p &= ~SALLY_FLAG.N;
 
-      if(~(sally_s.a ^ data) & ((ah << 4) ^ sally_s.a) & 0x80)
-         sally_s.p |= SALLY_FLAG.V;
+      if(~(sally_a ^ data) & ((ah << 4) ^ sally_a) & 0x80)
+         sally_p |= SALLY_FLAG.V;
       else
-         sally_s.p &= ~SALLY_FLAG.V;
+         sally_p &= ~SALLY_FLAG.V;
 
       if(ah > 9)
          ah += 6;
 
       if(ah > 15)
-         sally_s.p |= SALLY_FLAG.C;      
+         sally_p |= SALLY_FLAG.C;      
       else
-         sally_s.p &= ~SALLY_FLAG.C;
+         sally_p &= ~SALLY_FLAG.C;
 
-      sally_s.a = (ah << 4) | (al & 15);
+      sally_a = (ah << 4) | (al & 15);
    }
    else
    {
       pair temp;
-      temp.w = sally_s.a + data + (sally_s.p & SALLY_FLAG.C);
+      temp.w = sally_a + data + (sally_p & SALLY_FLAG.C);
 
       if(temp.b.h)
-         sally_s.p |= SALLY_FLAG.C;
+         sally_p |= SALLY_FLAG.C;
       else
-         sally_s.p &= ~SALLY_FLAG.C;
+         sally_p &= ~SALLY_FLAG.C;
 
-      if(~(sally_s.a ^ data) & (sally_s.a ^ temp.b.l) & 0x80)
-         sally_s.p |= SALLY_FLAG.V;
+      if(~(sally_a ^ data) & (sally_a ^ temp.b.l) & 0x80)
+         sally_p |= SALLY_FLAG.V;
       else
-         sally_s.p &= ~SALLY_FLAG.V;
+         sally_p &= ~SALLY_FLAG.V;
 
       sally_Flags(temp.b.l);
-      sally_s.a = temp.b.l;
+      sally_a = temp.b.l;
    }
 }
 
 static void sally_AND(void)
 {
-   sally_s.a &= read_mem(sally_address.w);
-   sally_Flags(sally_s.a);
+   sally_a &= read_mem(sally_address.w);
+   sally_Flags(sally_a);
 }
 
 static void sally_ASLA(void)
 {
-   if(sally_s.a & 0x80)
-      sally_s.p |= SALLY_FLAG.C;
+   if(sally_a & 0x80)
+      sally_p |= SALLY_FLAG.C;
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
-   sally_s.a <<= 1;
-   sally_Flags(sally_s.a);
+   sally_a <<= 1;
+   sally_Flags(sally_a);
 }
 
 static void sally_ASL(void)
@@ -359,9 +356,9 @@ static void sally_ASL(void)
    uint8_t data = read_mem(sally_address.w);
 
    if(data & 0x80)
-      sally_s.p |= SALLY_FLAG.C;
+      sally_p |= SALLY_FLAG.C;
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
    data <<= 1;
    write_mem(sally_address.w, data);
@@ -370,123 +367,123 @@ static void sally_ASL(void)
 
 static void sally_BCC(void)
 {
-   sally_Branch(!(sally_s.p & SALLY_FLAG.C));
+   sally_Branch(!(sally_p & SALLY_FLAG.C));
 }
 
 static void sally_BCS(void)
 {
-   sally_Branch(sally_s.p & SALLY_FLAG.C);
+   sally_Branch(sally_p & SALLY_FLAG.C);
 }
 
 static void sally_BEQ(void)
 {
-   sally_Branch(sally_s.p & SALLY_FLAG.Z);
+   sally_Branch(sally_p & SALLY_FLAG.Z);
 }
 
 static void sally_BIT(void)
 {
    uint8_t data = read_mem(sally_address.w);
-   sally_s.p &= ~(SALLY_FLAG.V | SALLY_FLAG.N | SALLY_FLAG.Z);
+   sally_p &= ~(SALLY_FLAG.V | SALLY_FLAG.N | SALLY_FLAG.Z);
 
-   if(!(data & sally_s.a)) 
+   if(!(data & sally_a)) 
    {
-      sally_s.p |= SALLY_FLAG.Z;
+      sally_p |= SALLY_FLAG.Z;
    }
-   sally_s.p |= data & SALLY_FLAG.V;
-   sally_s.p |= data & SALLY_FLAG.N;
+   sally_p |= data & SALLY_FLAG.V;
+   sally_p |= data & SALLY_FLAG.N;
 }
 
 static void sally_BMI(void)
 {
-   sally_Branch(sally_s.p & SALLY_FLAG.N);
+   sally_Branch(sally_p & SALLY_FLAG.N);
 }
 
 static void sally_BNE(void)
 {
-   sally_Branch(!(sally_s.p & SALLY_FLAG.Z));
+   sally_Branch(!(sally_p & SALLY_FLAG.Z));
 }
 
 static void sally_BPL(void)
 {
-   sally_Branch(!(sally_s.p & SALLY_FLAG.N));
+   sally_Branch(!(sally_p & SALLY_FLAG.N));
 }
 
 static void sally_BRK(void)
 {
-   sally_s.pc.w++;
-   sally_s.p |= SALLY_FLAG.B;
+   sally_pc.w++;
+   sally_p |= SALLY_FLAG.B;
 
-   sally_Push(sally_s.pc.b.h);
-   sally_Push(sally_s.pc.b.l);
-   sally_Push(sally_s.p);
+   sally_Push(sally_pc.b.h);
+   sally_Push(sally_pc.b.l);
+   sally_Push(sally_p);
 
-   sally_s.p |= SALLY_FLAG.I;
-   sally_s.pc.b.l = memory_ram[SALLY_IRQ.L];
-   sally_s.pc.b.h = memory_ram[SALLY_IRQ.H];
+   sally_p |= SALLY_FLAG.I;
+   sally_pc.b.l = read_mem(SALLY_IRQ.L);
+   sally_pc.b.h = read_mem(SALLY_IRQ.H);
 }
 
 static void sally_BVC(void)
 {
-   sally_Branch(!(sally_s.p & SALLY_FLAG.V));
+   sally_Branch(!(sally_p & SALLY_FLAG.V));
 }
 
 static void sally_BVS(void)
 {
-   sally_Branch(sally_s.p & SALLY_FLAG.V);
+   sally_Branch(sally_p & SALLY_FLAG.V);
 }
 
 static void sally_CLC(void)
 {
-   sally_s.p &= ~SALLY_FLAG.C;
+   sally_p &= ~SALLY_FLAG.C;
 }
 
 static void sally_CLD(void) {
-   sally_s.p &= ~SALLY_FLAG.D;
+   sally_p &= ~SALLY_FLAG.D;
 }
 
 static void sally_CLI(void) {
-   sally_s.p &= ~SALLY_FLAG.I;
+   sally_p &= ~SALLY_FLAG.I;
 }
 
 static void sally_CLV(void) {
-   sally_s.p &= ~SALLY_FLAG.V;
+   sally_p &= ~SALLY_FLAG.V;
 }
 
 static void sally_CMP(void) {
    uint8_t data = read_mem(sally_address.w);
 
-   if(sally_s.a >= data) {
-      sally_s.p |= SALLY_FLAG.C;
+   if(sally_a >= data) {
+      sally_p |= SALLY_FLAG.C;
    }
    else {
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
    }
 
-   sally_Flags(sally_s.a - data);
+   sally_Flags(sally_a - data);
 }
 
 static void sally_CPX(void)
 {
    uint8_t data = read_mem(sally_address.w);
 
-   if(sally_s.x >= data)
-      sally_s.p |= SALLY_FLAG.C;  
+   if(sally_x >= data)
+      sally_p |= SALLY_FLAG.C;  
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
-   sally_Flags(sally_s.x - data);
+   sally_Flags(sally_x - data);
 }
 
 static void sally_CPY(void)
 {
    uint8_t data = read_mem(sally_address.w);
 
-   if(sally_s.y >= data)
-      sally_s.p |= SALLY_FLAG.C;
+   if(sally_y >= data)
+      sally_p |= SALLY_FLAG.C;
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
-   sally_Flags(sally_s.y - data);
+   sally_Flags(sally_y - data);
 }
 
 static void sally_DEC(void)
@@ -498,18 +495,18 @@ static void sally_DEC(void)
 
 static void sally_DEX(void)
 {
-   sally_Flags(--sally_s.x);
+   sally_Flags(--sally_x);
 }
 
 static void sally_DEY(void)
 {
-   sally_Flags(--sally_s.y);
+   sally_Flags(--sally_y);
 }
 
 static void sally_EOR(void)
 {
-   sally_s.a ^= read_mem(sally_address.w);
-   sally_Flags(sally_s.a);
+   sally_a ^= read_mem(sally_address.w);
+   sally_Flags(sally_a);
 }
 
 static void sally_INC(void)
@@ -521,61 +518,61 @@ static void sally_INC(void)
 
 static void sally_INX(void)
 {
-   sally_Flags(++sally_s.x);
+   sally_Flags(++sally_x);
 }
 
 static void sally_INY(void)
 {
-   sally_Flags(++sally_s.y);
+   sally_Flags(++sally_y);
 }
 
 static void sally_JMP(void)
 {
-   sally_s.pc = sally_address;
+   sally_pc = sally_address;
 }
 
 static void sally_JSR(void)
 {
-   sally_s.pc.w--;
-   sally_Push(sally_s.pc.b.h);
-   sally_Push(sally_s.pc.b.l);
+   sally_pc.w--;
+   sally_Push(sally_pc.b.h);
+   sally_Push(sally_pc.b.l);
 
-   sally_s.pc = sally_address;
+   sally_pc = sally_address;
 }
 
 static void sally_LDA(void)
 {
-   sally_s.a = read_mem(sally_address.w);
-   sally_Flags(sally_s.a);
+   sally_a = read_mem(sally_address.w);
+   sally_Flags(sally_a);
 }
 
 static void sally_LDX(void)
 {
-   sally_s.x = read_mem(sally_address.w);
-   sally_Flags(sally_s.x);
+   sally_x = read_mem(sally_address.w);
+   sally_Flags(sally_x);
 }
 
 static void sally_LDY(void)
 {
-   sally_s.y = read_mem(sally_address.w);
-   sally_Flags(sally_s.y);
+   sally_y = read_mem(sally_address.w);
+   sally_Flags(sally_y);
 }
 
 static void sally_LSRA(void)
 {
-   sally_s.p &= ~SALLY_FLAG.C;
-   sally_s.p |= sally_s.a & 1;
+   sally_p &= ~SALLY_FLAG.C;
+   sally_p |= sally_a & 1;
 
-   sally_s.a >>= 1;
-   sally_Flags(sally_s.a);
+   sally_a >>= 1;
+   sally_Flags(sally_a);
 }
 
 static void sally_LSR(void)
 {
    uint8_t data = read_mem(sally_address.w);
 
-   sally_s.p &= ~SALLY_FLAG.C;
-   sally_s.p |= data & 1;
+   sally_p &= ~SALLY_FLAG.C;
+   sally_p |= data & 1;
 
    data >>= 1;
    write_mem(sally_address.w, data);
@@ -588,54 +585,54 @@ static void sally_NOP(void)
 
 static void sally_ORA(void)
 {
-   sally_s.a |= read_mem(sally_address.w);
-   sally_Flags(sally_s.a);
+   sally_a |= read_mem(sally_address.w);
+   sally_Flags(sally_a);
 }
 
 static void sally_PHA(void)
 {
-   sally_Push(sally_s.a);   
+   sally_Push(sally_a);   
 }
 
 static void sally_PHP(void)
 {
-   sally_Push(sally_s.p);
+   sally_Push(sally_p);
 }
 
 static void sally_PLA(void)
 {
-   sally_s.a = sally_Pop();
-   sally_Flags(sally_s.a);
+   sally_a = sally_Pop();
+   sally_Flags(sally_a);
 }
 
 static void sally_PLP(void)
 {
-   sally_s.p = sally_Pop();
+   sally_p = sally_Pop();
 }
 
 static void sally_ROLA(void)
 {
-   uint8_t temp = sally_s.p;
+   uint8_t temp = sally_p;
 
-   if(sally_s.a & 0x80)
-      sally_s.p |= SALLY_FLAG.C; 
+   if(sally_a & 0x80)
+      sally_p |= SALLY_FLAG.C; 
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
-   sally_s.a <<= 1;
-   sally_s.a |= temp & SALLY_FLAG.C;
-   sally_Flags(sally_s.a);
+   sally_a <<= 1;
+   sally_a |= temp & SALLY_FLAG.C;
+   sally_Flags(sally_a);
 }
 
 static void sally_ROL(void)
 {
    uint8_t data = read_mem(sally_address.w);
-   uint8_t temp = sally_s.p;
+   uint8_t temp = sally_p;
 
    if(data & 0x80)
-      sally_s.p |= SALLY_FLAG.C;
+      sally_p |= SALLY_FLAG.C;
    else
-      sally_s.p &= ~SALLY_FLAG.C;
+      sally_p &= ~SALLY_FLAG.C;
 
    data <<= 1;
    data |= temp & 1;
@@ -645,25 +642,25 @@ static void sally_ROL(void)
 
 static void sally_RORA(void)
 {
-   uint8_t temp = sally_s.p;
+   uint8_t temp = sally_p;
 
-   sally_s.p &= ~SALLY_FLAG.C;
-   sally_s.p |= sally_s.a & 1;
+   sally_p &= ~SALLY_FLAG.C;
+   sally_p |= sally_a & 1;
 
-   sally_s.a >>= 1;
+   sally_a >>= 1;
    if(temp & SALLY_FLAG.C)
-      sally_s.a |= 0x80;
+      sally_a |= 0x80;
 
-   sally_Flags(sally_s.a);
+   sally_Flags(sally_a);
 }
 
 static void sally_ROR(void)
 {
    uint8_t data = read_mem(sally_address.w);
-   uint8_t temp = sally_s.p;
+   uint8_t temp = sally_p;
 
-   sally_s.p &= ~SALLY_FLAG.C;
-   sally_s.p |= data & 1;
+   sally_p &= ~SALLY_FLAG.C;
+   sally_p |= data & 1;
 
    data >>= 1;
    if(temp & 1) {
@@ -676,27 +673,27 @@ static void sally_ROR(void)
 
 static void sally_RTI(void)
 {
-   sally_s.p      = sally_Pop();
-   sally_s.pc.b.l = sally_Pop();
-   sally_s.pc.b.h = sally_Pop();
+   sally_p      = sally_Pop();
+   sally_pc.b.l = sally_Pop();
+   sally_pc.b.h = sally_Pop();
 }
 
 static void sally_RTS(void)
 {
-   sally_s.pc.b.l = sally_Pop();
-   sally_s.pc.b.h = sally_Pop();
-   sally_s.pc.w++;
+   sally_pc.b.l = sally_Pop();
+   sally_pc.b.h = sally_Pop();
+   sally_pc.w++;
 }
 
 static void sally_SBC(void)
 {
    uint8_t data = read_mem(sally_address.w);
 
-   if(sally_s.p & SALLY_FLAG.D)
+   if(sally_p & SALLY_FLAG.D)
    {
       pair temp;
-      uint16_t al = (sally_s.a & 15) - (data & 15) - !(sally_s.p & SALLY_FLAG.C);
-      uint16_t ah = (sally_s.a >> 4) - (data >> 4);
+      uint16_t al = (sally_a & 15) - (data & 15) - !(sally_p & SALLY_FLAG.C);
+      uint16_t ah = (sally_a >> 4) - (data >> 4);
 
       if(al > 9) {
          al -= 6;
@@ -707,125 +704,125 @@ static void sally_SBC(void)
          ah -= 6;
       }
 
-      temp.w = sally_s.a - data - !(sally_s.p & SALLY_FLAG.C);
+      temp.w = sally_a - data - !(sally_p & SALLY_FLAG.C);
 
       if(!temp.b.h) {
-         sally_s.p |= SALLY_FLAG.C;
+         sally_p |= SALLY_FLAG.C;
       }
       else {
-         sally_s.p &= ~SALLY_FLAG.C;
+         sally_p &= ~SALLY_FLAG.C;
       }
 
-      if((sally_s.a ^ data) & (sally_s.a ^ temp.b.l) & 0x80) {
-         sally_s.p |= SALLY_FLAG.V;
+      if((sally_a ^ data) & (sally_a ^ temp.b.l) & 0x80) {
+         sally_p |= SALLY_FLAG.V;
       }
       else {
-         sally_s.p &= ~SALLY_FLAG.V;     
+         sally_p &= ~SALLY_FLAG.V;     
       }
 
       sally_Flags(temp.b.l);
-      sally_s.a = (ah << 4) | (al & 15);
+      sally_a = (ah << 4) | (al & 15);
    }
    else
    {
       pair temp;
-      temp.w = sally_s.a - data - !(sally_s.p & SALLY_FLAG.C);
+      temp.w = sally_a - data - !(sally_p & SALLY_FLAG.C);
 
       if(!temp.b.h) {
-         sally_s.p |= SALLY_FLAG.C;
+         sally_p |= SALLY_FLAG.C;
       }
       else {
-         sally_s.p &= ~SALLY_FLAG.C;
+         sally_p &= ~SALLY_FLAG.C;
       }
 
-      if((sally_s.a ^ data) & (sally_s.a ^ temp.b.l) & 0x80) {
-         sally_s.p |= SALLY_FLAG.V;
+      if((sally_a ^ data) & (sally_a ^ temp.b.l) & 0x80) {
+         sally_p |= SALLY_FLAG.V;
       }
       else {
-         sally_s.p &= ~SALLY_FLAG.V;
+         sally_p &= ~SALLY_FLAG.V;
       }
 
       sally_Flags(temp.b.l);
-      sally_s.a = temp.b.l;
+      sally_a = temp.b.l;
    }
 }
 
 static void sally_SEC(void)
 {
-   sally_s.p |= SALLY_FLAG.C; 
+   sally_p |= SALLY_FLAG.C; 
 }
 
 static void sally_SED(void)
 {
-   sally_s.p |= SALLY_FLAG.D;
+   sally_p |= SALLY_FLAG.D;
 }
 
 static void sally_SEI(void)
 {
-   sally_s.p |= SALLY_FLAG.I;
+   sally_p |= SALLY_FLAG.I;
 }
 
 static void sally_STA(void)
 {
-   write_mem(sally_address.w, sally_s.a);
+   write_mem(sally_address.w, sally_a);
 }
 
 static void sally_STX(void)
 {
-   write_mem(sally_address.w, sally_s.x);
+   write_mem(sally_address.w, sally_x);
 }
 
 static void sally_STY(void)
 {
-   write_mem(sally_address.w, sally_s.y);
+   write_mem(sally_address.w, sally_y);
 }
 
 static void sally_TAX(void)
 {
-   sally_s.x = sally_s.a;
-   sally_Flags(sally_s.x);
+   sally_x = sally_a;
+   sally_Flags(sally_x);
 }
 
 static void sally_TAY(void)
 {
-   sally_s.y = sally_s.a;
-   sally_Flags(sally_s.y);
+   sally_y = sally_a;
+   sally_Flags(sally_y);
 }
 
 static void sally_TSX(void)
 {
-   sally_s.x = sally_s.s;
-   sally_Flags(sally_s.x);
+   sally_x = sally_s;
+   sally_Flags(sally_x);
 }
 
 static void sally_TXA(void)
 {
-   sally_s.a = sally_s.x;
-   sally_Flags(sally_s.a);
+   sally_a = sally_x;
+   sally_Flags(sally_a);
 }
 
 static void sally_TXS(void)
 {
-   sally_s.s = sally_s.x;
+   sally_s = sally_x;
 }
 
 static void sally_TYA(void)
 {
-   sally_s.a = sally_s.y;
-   sally_Flags(sally_s.a);
+   sally_a = sally_y;
+   sally_Flags(sally_a);
 }
 
 void sally_Reset(void)
 {
-   sally_s.a = 0;
-   sally_s.x = 0;
-   sally_s.y = 0;
-   sally_s.p = SALLY_FLAG.R;
-   sally_s.s = 0;
-   sally_s.pc.w = 0;
+   sally_a = 0;
+   sally_x = 0;
+   sally_y = 0;
+   sally_p = SALLY_FLAG.R;
+   sally_s = 0;
+   sally_pc.w = 0;
 
-   sally_s.nmi = 0;
-   sally_s.irq = 0;
+   sally_nmi = 0;
+   sally_irq = 0;
 
    sally_reset = 1;
 
@@ -835,42 +832,42 @@ void sally_Reset(void)
 
 static uint32_t sally_ExecuteRES(void)
 {
-   sally_s.p      = SALLY_FLAG.I | SALLY_FLAG.R | SALLY_FLAG.Z;
-   sally_s.pc.b.l = read_mem(SALLY_RES.L);
-   sally_s.pc.b.h = read_mem(SALLY_RES.H);
+   sally_p      = SALLY_FLAG.I | SALLY_FLAG.R | SALLY_FLAG.Z;
+   sally_pc.b.l = read_mem(SALLY_RES.L);
+   sally_pc.b.h = read_mem(SALLY_RES.H);
 
    return 6;
 }
 
 static uint32_t sally_ExecuteNMI(void)
 {
-   sally_Push(sally_s.pc.b.h);
-   sally_Push(sally_s.pc.b.l);
-   sally_s.p &= ~SALLY_FLAG.B;
-   sally_Push(sally_s.p);
-   sally_s.p |= SALLY_FLAG.I;
-   sally_s.pc.b.l = read_mem(SALLY_NMI.L);
-   sally_s.pc.b.h = read_mem(SALLY_NMI.H);
+   sally_Push(sally_pc.b.h);
+   sally_Push(sally_pc.b.l);
+   sally_p &= ~SALLY_FLAG.B;
+   sally_Push(sally_p);
+   sally_p |= SALLY_FLAG.I;
+   sally_pc.b.l = read_mem(SALLY_NMI.L);
+   sally_pc.b.h = read_mem(SALLY_NMI.H);
 
    return 7;
 }
 
 static uint32_t sally_ExecuteIRQ(void)
 {
-   sally_Push(sally_s.pc.b.h);
-   sally_Push(sally_s.pc.b.l);
-   sally_s.p &= ~SALLY_FLAG.B;
-   sally_Push(sally_s.p);
-   sally_s.p |= SALLY_FLAG.I;
-   sally_s.pc.b.l = read_mem(SALLY_IRQ.L);
-   sally_s.pc.b.h = read_mem(SALLY_IRQ.H);
+   sally_Push(sally_pc.b.h);
+   sally_Push(sally_pc.b.l);
+   sally_p &= ~SALLY_FLAG.B;
+   sally_Push(sally_p);
+   sally_p |= SALLY_FLAG.I;
+   sally_pc.b.l = read_mem(SALLY_IRQ.L);
+   sally_pc.b.h = read_mem(SALLY_IRQ.H);
 
    return 7;
 }
 
 static uint32_t sally_ExecuteInstruction(void)
 {
-   sally_opcode = read_mem(sally_s.pc.w++);
+   sally_opcode = read_mem(sally_pc.w++);
    sally_cycles = SALLY_CYCLES[sally_opcode];
 
    switch (sally_opcode)
@@ -925,7 +922,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x11:
       sally_IndirectY();
       sally_ORA();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x15:
@@ -945,13 +942,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x19:
       sally_AbsoluteY();
       sally_ORA();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x1d:
       sally_AbsoluteX();
       sally_ORA();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0x1e:
@@ -1020,7 +1017,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x31:
       sally_IndirectY();
       sally_AND();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x35:
@@ -1040,13 +1037,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x39:
       sally_AbsoluteY();
       sally_AND();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x3d:
       sally_AbsoluteX();
       sally_AND();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0x3e:
@@ -1109,7 +1106,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x51:
       sally_IndirectY();
       sally_EOR();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;     
 
    case 0x55:
@@ -1129,13 +1126,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x59:
       sally_AbsoluteY();
       sally_EOR();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x5d:
       sally_AbsoluteX();
       sally_EOR();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0x5e:
@@ -1198,7 +1195,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x71:
       sally_IndirectY();
       sally_ADC();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x75:
@@ -1218,13 +1215,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x79:
       sally_AbsoluteY();
       sally_ADC();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0x7d:
       sally_AbsoluteX();
       sally_ADC();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0x7e:
@@ -1384,7 +1381,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xb1:
       sally_IndirectY();
       sally_LDA();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xb4:
@@ -1409,7 +1406,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xb9:
       sally_AbsoluteY();
       sally_LDA();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xba:
@@ -1419,19 +1416,19 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xbc:
       sally_AbsoluteX();
       sally_LDY();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0xbd:
       sally_AbsoluteX();
       sally_LDA();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0xbe:
       sally_AbsoluteY();
       sally_LDX();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xc0:
@@ -1495,7 +1492,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xd1:
       sally_IndirectY();
       sally_CMP();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xd5:
@@ -1515,13 +1512,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xd9:
       sally_AbsoluteY();
       sally_CMP();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xdd:
       sally_AbsoluteX();
       sally_CMP();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0xde:
@@ -1590,7 +1587,7 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xf1:
       sally_IndirectY();
       sally_SBC();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xf5:
@@ -1610,13 +1607,13 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0xf9:
       sally_AbsoluteY();
       sally_SBC();
-      sally_Delay(sally_s.y);
+      sally_Delay(sally_y);
       break;
 
    case 0xfd:
       sally_AbsoluteX();
       sally_SBC();
-      sally_Delay(sally_s.x);
+      sally_Delay(sally_x);
       break;
 
    case 0xfe:
@@ -1628,10 +1625,10 @@ static uint32_t sally_ExecuteInstruction(void)
    case 0x2b:
       sally_Immediate();
       sally_AND();
-      if (sally_s.a & 0x80)
-         sally_s.p |= SALLY_FLAG.C;
+      if (sally_a & 0x80)
+         sally_p |= SALLY_FLAG.C;
       else
-         sally_s.p &= ~SALLY_FLAG.C;
+         sally_p &= ~SALLY_FLAG.C;
       break;
 
    case 0x4b:  /* ALR - ASR */
@@ -1663,12 +1660,12 @@ static uint32_t sally_ExecuteInstruction(void)
 
 void sally_SetNMI(void)
 {
-   sally_s.nmi = 2;  /* 2-cycle delay */
+   sally_nmi = 2;  /* 2-cycle delay */
 }
 
 void sally_SetIRQ(void)
 {
-   sally_s.irq = 2;  /* 2-cycle delay */
+   sally_irq = 2;  /* 2-cycle delay */
 }
 
 static int sally_RunOnce(void)
@@ -1684,12 +1681,12 @@ static int sally_RunOnce(void)
       return 0;
 
 
-   if (sally_s.nmi)  /* pending or ack */
-	   return (--sally_s.nmi) ? sally_ExecuteInstruction() : sally_ExecuteNMI();
+   if (sally_nmi)  /* pending or ack */
+	   return (--sally_nmi) ? sally_ExecuteInstruction() : sally_ExecuteNMI();
 
 
-   if (sally_s.irq && !(sally_s.p & SALLY_FLAG.I))  /* pending or ack */
-	   return (--sally_s.irq) ? sally_ExecuteInstruction() : sally_ExecuteIRQ();
+   if (sally_irq && !(sally_p & SALLY_FLAG.I))  /* pending or ack */
+	   return (--sally_irq) ? sally_ExecuteInstruction() : sally_ExecuteIRQ();
 
 
    return sally_ExecuteInstruction();
@@ -1707,12 +1704,26 @@ int sally_SlowCycles(void)
 
 void sally_LoadState(void)
 {
-   memcpy(&sally_s, prosystem_statePtr, sizeof(sally_s));
-   prosystem_statePtr += sizeof(sally_s);
+   sally_a = prosystem_ReadState8();
+   sally_x = prosystem_ReadState8();
+   sally_y = prosystem_ReadState8();
+   sally_p = prosystem_ReadState8();
+   sally_s = prosystem_ReadState8();
+   sally_pc.w = prosystem_ReadState16();
+
+   sally_nmi = prosystem_ReadState8();
+   sally_irq = prosystem_ReadState8();
 }
 
 void sally_SaveState(void)
 {
-   memcpy(prosystem_statePtr, &sally_s, sizeof(sally_s));
-   prosystem_statePtr += sizeof(sally_s);
+   prosystem_WriteState8(sally_a);
+   prosystem_WriteState8(sally_x);
+   prosystem_WriteState8(sally_y);
+   prosystem_WriteState8(sally_p);
+   prosystem_WriteState8(sally_s);
+   prosystem_WriteState16(sally_pc.w);
+
+   prosystem_WriteState8(sally_nmi);
+   prosystem_WriteState8(sally_irq);
 }

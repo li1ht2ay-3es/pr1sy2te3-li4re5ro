@@ -167,7 +167,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       /* 28-x = maria render */
       {
          cycles = maria_Run();
-         //if (cycles > CYCLES_PER_SCANLINE) cycles = CYCLES_PER_SCANLINE;
+         if (cycles + prosystem_cycles > CYCLES_PER_SCANLINE) cycles = CYCLES_PER_SCANLINE - prosystem_cycles;
 
          prosystem_Run(cycles);
       }
@@ -211,18 +211,23 @@ void prosystem_Close(bool persistent_data)
 
 bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves)
 {
+   char digest[33];
+
    prosystem_statePtr = buffer;
 
    if (memcmp(prosystem_statePtr, PRO_SYSTEM_STATE_HEADER, sizeof(PRO_SYSTEM_STATE_HEADER)-1) != 0)
       return false;
    prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
 
-   cartridge_LoadState();
+   prosystem_ReadStatePtr(digest, 32);
+
    maria_LoadState();
    memory_LoadState();
    riot_LoadState();
    sally_LoadState();
    tia_LoadState();
+
+   cartridge_LoadState();  /* expansion modules */
 
    return true;
 }
@@ -234,12 +239,73 @@ int prosystem_SaveState(uint8_t *buffer, bool fast_saves)
    memcpy(prosystem_statePtr, PRO_SYSTEM_STATE_HEADER, sizeof(PRO_SYSTEM_STATE_HEADER)-1);
    prosystem_statePtr += sizeof(PRO_SYSTEM_STATE_HEADER)-1;
 
-   cartridge_SaveState();
+   prosystem_WriteStatePtr(cartridge_digest, 32);
+
    maria_SaveState();
    memory_SaveState();
    riot_SaveState();
    sally_SaveState();
    tia_SaveState();
 
+   cartridge_SaveState();  /* expansion modules */
+
    return prosystem_statePtr - buffer;
+}
+
+uint8_t prosystem_ReadState8(void)
+{
+   return (*prosystem_statePtr++);
+}
+
+uint16_t prosystem_ReadState16(void)
+{
+   uint16_t val = 0;
+
+   val |= (*prosystem_statePtr++);
+   return ((val << 8) | (*prosystem_statePtr++));
+}
+
+uint32_t prosystem_ReadState32(void)
+{
+   uint32_t val = 0;
+
+   val |= (*prosystem_statePtr++);
+   val <<= 8;
+
+   val |= (*prosystem_statePtr++);
+   val <<= 8;
+
+   val |= (*prosystem_statePtr++);
+   return ((val << 8) | (*prosystem_statePtr++));
+}
+
+void prosystem_ReadStatePtr(uint8_t *ptr, uint32_t size)
+{
+   memcpy(ptr, prosystem_statePtr, size);
+   prosystem_statePtr += size;
+}
+
+void prosystem_WriteState8(uint8_t val)
+{
+   (*prosystem_statePtr++) = val;
+}
+
+void prosystem_WriteState16(uint16_t val)
+{
+   (*prosystem_statePtr++) = (val >> 8) & 0xff;
+   (*prosystem_statePtr++) = (val >> 0) & 0xff;
+}
+
+void prosystem_WriteState32(uint32_t val)
+{
+   (*prosystem_statePtr++) = (val >> 24) & 0xff;
+   (*prosystem_statePtr++) = (val >> 16) & 0xff;
+   (*prosystem_statePtr++) = (val >> 8) & 0xff;
+   (*prosystem_statePtr++) = (val >> 0) & 0xff;
+}
+
+void prosystem_WriteStatePtr(uint8_t *ptr, uint32_t size)
+{
+   memcpy(prosystem_statePtr, ptr, size);
+   prosystem_statePtr += size;
 }

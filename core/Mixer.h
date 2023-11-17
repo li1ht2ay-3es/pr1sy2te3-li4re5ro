@@ -49,7 +49,7 @@ extern "C" {
 #endif
 
 
-#define MAX_SOUND_SAMPLES (3 * 2 * 384000 / 50)  /* 384000 stereo x overflow */
+#define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* 192000 stereo x overflow */
 
 extern int16_t mixer_buffer[MAX_SOUND_SAMPLES];
 extern int mixer_outCount;

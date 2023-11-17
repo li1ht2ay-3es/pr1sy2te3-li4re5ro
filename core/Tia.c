@@ -56,20 +56,17 @@ static const uint8_t TIA_POLY5[ ] = {0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0,1,1,1
 static const uint8_t TIA_POLY9[ ] = {0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,1,1,1,0,0,1,1,0,1,1,0,1,0,1,1,1,0,1,1,0,0,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,1,1,1,1,0,1,0,1,1,0,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,1,0,0,0,1,1,1,0,0,1,1,0,1,1,0,0,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,1,1,1,0,0,1,0,0,0,1,1,1,0,0,1,1,0,1,0,1,1,0,1,1,0,1,0,0,1,0,0,1,1,1,1,1,1,0,1,1,1,1,0,1,1,0,0,0,0,1,1,1,1,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,0,0,0,0,0,0,0,0,1,0,1,0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1,1,1,1,0,0,0,1,1,1,0,0,0,1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,0,1,0,1,1,1,1,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,1,1,0,0,0,1,0,1,0,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1,0,0,1,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,1,1,0,1,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0,1,1,0,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,1,0,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,1,1,0,1,1,1,0,0,0,1,0,1,0,0,1,0,1,0,1,0,1,1,1,0,0,1,0,1,1,0,0,1,1,1,1,1,0,0,0,1,1,0};
 static const uint8_t TIA_DIV31[ ] = {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0};
 
-#define tia_audc (memory_ram+AUDC0)
-#define tia_audf (memory_ram+AUDF0)
-#define tia_audv (memory_ram+AUDV0)
+#define tia_audc (memory_ram + AUDC0)
+#define tia_audf (memory_ram + AUDF0)
+#define tia_audv (memory_ram + AUDV0)
 
-struct
-{
-   uint8_t volume[2];
-   uint8_t counter[2];
-   uint8_t counterMax[2];
+uint8_t tia_volume[2];
+uint8_t tia_counter[2];
+uint8_t tia_counterMax[2];
 
-   uint8_t poly4Cntr[2];
-   uint8_t poly5Cntr[2];
-   uint16_t poly9Cntr[2];
-} tia_s;
+uint8_t tia_poly4Cntr[2];
+uint8_t tia_poly5Cntr[2];
+uint16_t tia_poly9Cntr[2];
 
 static const int TIA_CYCLES = CYCLES_PER_SCANLINE / 2;  /* Maria x 1/227 ~ 1/2 scanline */
 
@@ -102,32 +99,32 @@ void tia_SetLowpass(int limit)
 
 static void tia_ProcessChannel(uint8_t channel)
 {
-   tia_s.poly5Cntr[channel] = (tia_s.poly5Cntr[channel] + 1) % TIA_POLY5_SIZE;
+   tia_poly5Cntr[channel] = (tia_poly5Cntr[channel] + 1) % TIA_POLY5_SIZE;
 
    if( ((tia_audc[channel] & 2) == 0) ||
-       ( ((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_s.poly5Cntr[channel]] ) ||
-       ( ((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_s.poly5Cntr[channel]] )
+       ( ((tia_audc[channel] & 1) == 0) && TIA_DIV31[tia_poly5Cntr[channel]] ) ||
+       ( ((tia_audc[channel] & 1) == 1) && TIA_POLY5[tia_poly5Cntr[channel]] )
      )
    {
       if (tia_audc[channel] & 4)
-         tia_s.volume[channel] = (!tia_s.volume[channel]) ? tia_audv[channel]: 0;
+         tia_volume[channel] = (!tia_volume[channel]) ? tia_audv[channel]: 0;
 
       else if (tia_audc[channel] & 8)
       {
          if (tia_audc[channel] == 8)
          {
-            tia_s.poly9Cntr[channel] = (tia_s.poly9Cntr[channel]+1) % TIA_POLY9_SIZE;
-            tia_s.volume[channel] = (TIA_POLY9[tia_s.poly9Cntr[channel]]) ? tia_audv[channel]: 0;
+            tia_poly9Cntr[channel] = (tia_poly9Cntr[channel]+1) % TIA_POLY9_SIZE;
+            tia_volume[channel] = (TIA_POLY9[tia_poly9Cntr[channel]]) ? tia_audv[channel]: 0;
          }
 
          else
-            tia_s.volume[channel] = (TIA_POLY5[tia_s.poly5Cntr[channel]]) ? tia_audv[channel]: 0;
+            tia_volume[channel] = (TIA_POLY5[tia_poly5Cntr[channel]]) ? tia_audv[channel]: 0;
       }
 
       else
       {
-         tia_s.poly4Cntr[channel] = (tia_s.poly4Cntr[channel] + 1) % TIA_POLY4_SIZE;
-         tia_s.volume[channel] = (TIA_POLY4[tia_s.poly4Cntr[channel]]) ? tia_audv[channel]: 0;
+         tia_poly4Cntr[channel] = (tia_poly4Cntr[channel] + 1) % TIA_POLY4_SIZE;
+         tia_volume[channel] = (TIA_POLY4[tia_poly4Cntr[channel]]) ? tia_audv[channel]: 0;
       }
    }
 }
@@ -139,8 +136,18 @@ void tia_Frame(void)
 
 void tia_Reset(void)
 {
-   memset(&tia_s, 0, sizeof(tia_s));
-   memset(&tia_buffer, 0, sizeof(tia_buffer));
+   uint32_t index;
+
+   for (index = 0; index < 2; index++)
+   {
+      tia_volume[index] = 0;
+      tia_counter[index] = 0;
+      tia_counterMax[index] = 0;
+
+      tia_poly4Cntr[index] = 0;
+      tia_poly5Cntr[index] = 0;
+      tia_poly9Cntr[index] = 0;
+   }
 
    out_clock = 0;
 }
@@ -153,7 +160,7 @@ static void update_channel(int channel)
    {
       frequency = 0;
 
-      tia_s.volume[channel] = tia_audv[channel];
+      tia_volume[channel] = tia_audv[channel];
    }
 
    else
@@ -165,12 +172,12 @@ static void update_channel(int channel)
    }
 
 
-   if (frequency != tia_s.counterMax[channel])
+   if (frequency != tia_counterMax[channel])
    {
-      tia_s.counterMax[channel] = frequency;
+      tia_counterMax[channel] = frequency;
 
-      if (tia_s.counter[channel] == 0 || frequency == 0)
-         tia_s.counter[channel] = frequency;
+      if (tia_counter[channel] == 0 || frequency == 0)
+         tia_counter[channel] = frequency;
    }
 }
 
@@ -235,18 +242,18 @@ static void tia_Tick()
 
    for (index = 0; index < 2; index++)
    {
-      if (tia_s.counter[index] > 1)
-         tia_s.counter[index]--;
+      if (tia_counter[index] > 1)
+         tia_counter[index]--;
 
-      else if (tia_s.counter[index] == 1)
+      else if (tia_counter[index] == 1)
       {
-         tia_s.counter[index] = tia_s.counterMax[index];
+         tia_counter[index] = tia_counterMax[index];
          tia_ProcessChannel(index);
       }
 
 
-      tia_lpfCount[index] = (tia_lpfNew[index] == tia_s.volume[index]) ? tia_lpfCount[index] + 1 : 1;  /* frequency change */
-      tia_lpfNew[index] = tia_s.volume[index];
+      tia_lpfCount[index] = (tia_lpfNew[index] == tia_volume[index]) ? tia_lpfCount[index] + 1 : 1;  /* frequency change */
+      tia_lpfNew[index] = tia_volume[index];
       tia_lpfOld[index] = (tia_lpfCount[index] >= tia_lowpass) ? tia_lpfNew[index] : tia_lpfOld[index];  /* latch new value */
 
       outvol += tia_lpfOld[index];  /* 4-bit unsigned */
@@ -308,18 +315,36 @@ void tia_SetRate()
 
 void tia_LoadState(void)
 {
-   memcpy(memory_ram + 0x00, prosystem_statePtr, 0x20);
-   prosystem_statePtr += 0x20;
+   uint32_t index;
 
-   memcpy(&tia_s, prosystem_statePtr, sizeof(tia_s));
-   prosystem_statePtr += sizeof(tia_s);
+   prosystem_ReadStatePtr(memory_ram, 0x20);
+
+   for (index = 0; index < 2; index++)
+   {
+      tia_volume[index] = prosystem_ReadState8();
+      tia_counter[index] = prosystem_ReadState8();
+      tia_counterMax[index] = prosystem_ReadState8();
+
+      tia_poly4Cntr[index] = prosystem_ReadState8();
+      tia_poly5Cntr[index] = prosystem_ReadState8();
+      tia_poly9Cntr[index] = prosystem_ReadState16();
+   }
 }
 
 void tia_SaveState(void)
 {
-   memcpy(prosystem_statePtr, memory_ram + 0x00, 0x20);
-   prosystem_statePtr += 0x20;
+   uint32_t index;
 
-   memcpy(prosystem_statePtr, &tia_s, sizeof(tia_s));
-   prosystem_statePtr += sizeof(tia_s);
+   prosystem_WriteStatePtr(memory_ram, 0x20);
+
+   for (index = 0; index < 2; index++)
+   {
+      prosystem_WriteState8(tia_volume[index]);
+      prosystem_WriteState8(tia_counter[index]);
+      prosystem_WriteState8(tia_counterMax[index]);
+
+      prosystem_WriteState8(tia_poly4Cntr[index]);
+      prosystem_WriteState8(tia_poly5Cntr[index]);
+      prosystem_WriteState16(tia_poly9Cntr[index]);
+   }
 }

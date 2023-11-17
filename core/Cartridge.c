@@ -456,10 +456,65 @@ INLINE void cartridge_ScanlineEnd(void)
 
 void cartridge_LoadState(void)
 {
+   uint8_t flags;
+   uint32_t temp;
+
    mapper_LoadState();
+
+   while (1)
+   {
+      flags = prosystem_ReadState8();
+      if (flags == 255)
+         break;
+
+      switch (flags)
+	  {
+	  case 0:
+         temp = prosystem_ReadState32();
+         prosystem_ReadStatePtr(memory_exram, temp);
+         break;
+
+	  case 1:
+         /* pokey1 */
+         break;
+
+	  case 2:
+         bupchip_LoadState();
+         break;
+
+	  case 3:
+         /* ym2141 */
+         break;
+
+	  case 4:
+         /* covox */
+         break;
+
+	  case 5:
+         /* atarivox */
+         break;
+	  }
+   }
 }
 
 void cartridge_SaveState(void)
 {
    mapper_SaveState();
+
+   if (memory_exram_size)
+   {
+      prosystem_WriteState8(0);
+
+      prosystem_WriteState32(memory_exram_size);
+      prosystem_WriteStatePtr(memory_exram, memory_exram_size);
+   }
+
+   if (cartridge_bupchip)
+   {
+      prosystem_WriteState8(2);
+
+      bupchip_SaveState();
+   }
+
+   prosystem_WriteState8(255);
 }

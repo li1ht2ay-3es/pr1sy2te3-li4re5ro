@@ -29,36 +29,33 @@
 #include "Equates.h"
 #include "Memory.h"
 
-struct
-{
-   uint8_t dra;
-   uint8_t drb;
+uint8_t riot_dra;
+uint8_t riot_drb;
 
-   bool active;
-   bool elapsed;
+uint8_t riot_active;
+uint8_t riot_elapsed;
 
-   int16_t timer;
-   uint8_t intervals;
+int16_t riot_timer;
+uint8_t riot_intervals;
 
-   int32_t currentTime;
-   uint16_t clocks;
-} riot_s;
+int32_t riot_currentTime;
+uint16_t riot_clocks;
 
 static uint32_t riot_halfcycle = 0;
 
 
 void riot_Reset(void)
 {
-   riot_s.dra = 0;
-   riot_s.drb = 0;
+   riot_dra = 0;
+   riot_drb = 0;
 
-   riot_s.timer = TIM64T; 
-   riot_s.intervals = 0;
-   riot_s.clocks = 0;
-   riot_s.currentTime = 0;
+   riot_timer = TIM64T; 
+   riot_intervals = 0;
+   riot_clocks = 0;
+   riot_currentTime = 0;
 
-   riot_s.elapsed = false;
-   riot_s.active = false;
+   riot_elapsed = 0;
+   riot_active = 0;
 
    riot_halfcycle = 0;
 }
@@ -96,7 +93,7 @@ void riot_SetInput(const uint8_t* input)
      SWCHA is directionals.  SWCHB is console switches and button mode.
      button signals are in high bits of INPT0-5.*/
 
-   memory_ram[SWCHA] = ((~memory_ram[CTLSWA]) | riot_s.dra);	/*SWCHA as driven by RIOT*/
+   memory_ram[SWCHA] = ((~memory_ram[CTLSWA]) | riot_dra);	/*SWCHA as driven by RIOT*/
 
 
    /*now console switches will force bits to ground:*/
@@ -134,7 +131,7 @@ void riot_SetInput(const uint8_t* input)
      From the default state after boot, simply changing CTLSWB to 1 will result in 2 button mode.
      Some games rely on this, and don't actually store anything to SWCHB.*/
 
-   memory_ram[SWCHB] = ((~memory_ram[CTLSWB]) | riot_s.drb);	/*SWCHB as driven by RIOT*/
+   memory_ram[SWCHB] = ((~memory_ram[CTLSWB]) | riot_drb);	/*SWCHB as driven by RIOT*/
 
 
    /*now the console switches can force certain bits to ground:*/
@@ -188,14 +185,14 @@ void riot_SetTimer(uint16_t timer, uint8_t intervals)
 {
    const uint16_t clocks[4] = { 1, 8, 64, 1024 };
 
-   riot_s.clocks = clocks[timer & 3];
-   riot_s.timer = timer;
-   riot_s.intervals = intervals;
+   riot_clocks = clocks[timer & 3];
+   riot_timer = timer;
+   riot_intervals = intervals;
 
-   riot_s.currentTime = riot_s.clocks * intervals;
+   riot_currentTime = riot_clocks * intervals;
 
-   riot_s.elapsed = false;
-   riot_s.active = true;
+   riot_elapsed = 0;
+   riot_active = 1;
 }
 
 INLINE uint8_t riot_Read(uint16_t address)
@@ -223,7 +220,7 @@ INLINE uint8_t riot_Read(uint16_t address)
       return oldval;
    }
 
-   return 0xff;
+   return address & 0xff;  /* Open bus? */
 }
 
 INLINE void riot_Write(uint16_t address, uint8_t data)
@@ -232,11 +229,11 @@ INLINE void riot_Write(uint16_t address, uint8_t data)
    switch(address)
    {
    case SWCHA:
-      riot_s.dra = data;
+      riot_dra = data;
       break;
 
    case SWCHB:
-      riot_s.drb = data;
+      riot_drb = data;
       break;
 
    case CTLSWA:
@@ -259,37 +256,37 @@ INLINE void riot_Write(uint16_t address, uint8_t data)
 
 static void riot_Process()
 {
-   if (!riot_s.active)  /* timer stopped */
+   if (!riot_active)  /* timer stopped */
       return;
 
 
-   riot_s.currentTime--;
+   riot_currentTime--;
 
-   if (!riot_s.elapsed)
+   if (!riot_elapsed)
    {
-      if (riot_s.currentTime > 0)
-         memory_ram[INTIM] = riot_s.currentTime / riot_s.clocks;
+      if (riot_currentTime > 0)
+         memory_ram[INTIM] = riot_currentTime / riot_clocks;
 
       else
       {
-         riot_s.currentTime = riot_s.clocks;
+         riot_currentTime = riot_clocks;
 
          memory_ram[INTIM] = 0;
          memory_ram[INTFLG] |= 0x80;
 
-         riot_s.elapsed = true;
+         riot_elapsed = 1;
       }
    }
 
    else  /* riot_elapsed */
    {
-      if (riot_s.currentTime >= -255)
-         memory_ram[INTIM] = riot_s.currentTime;
+      if (riot_currentTime >= -255)
+         memory_ram[INTIM] = riot_currentTime;
 
       else
       {
          memory_ram[INTIM] = 0;
-         riot_s.active = false;
+         riot_active = 0;
       }
    }
 }
@@ -310,18 +307,28 @@ void riot_Run(uint32_t cycles)
 
 void riot_LoadState(void)
 {
-   memcpy(memory_ram + 0x280, prosystem_statePtr, 0x20);
-   prosystem_statePtr += 0x20;
+   prosystem_ReadStatePtr(memory_ram + 0x280, 0x20);
 
-   memcpy(&riot_s, prosystem_statePtr, sizeof(riot_s));
-   prosystem_statePtr += sizeof(riot_s);
+   riot_dra = prosystem_ReadState8();
+   riot_drb = prosystem_ReadState8();
+   riot_active = prosystem_ReadState8();
+   riot_elapsed = prosystem_ReadState8();
+   riot_timer = prosystem_ReadState16();
+   riot_intervals = prosystem_ReadState8();
+   riot_currentTime = prosystem_ReadState32();
+   riot_clocks = prosystem_ReadState16();
 }
 
 void riot_SaveState(void)
 {
-   memcpy(prosystem_statePtr, memory_ram + 0x280, 0x20);
-   prosystem_statePtr += 0x20;
+   prosystem_WriteStatePtr(memory_ram + 0x280, 0x20);
 
-   memcpy(prosystem_statePtr, &riot_s, sizeof(riot_s));
-   prosystem_statePtr += sizeof(riot_s);
+   prosystem_WriteState8(riot_dra);
+   prosystem_WriteState8(riot_drb);
+   prosystem_WriteState8(riot_active);
+   prosystem_WriteState8(riot_elapsed);
+   prosystem_WriteState16(riot_timer);
+   prosystem_WriteState8(riot_intervals);
+   prosystem_WriteState32(riot_currentTime);
+   prosystem_WriteState16(riot_clocks);
 }
