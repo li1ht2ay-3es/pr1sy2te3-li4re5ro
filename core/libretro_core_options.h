@@ -216,7 +216,7 @@ struct retro_core_option_definition option_defs_us[] = {
          { "200", "200%" },
          { NULL, NULL },
       },
-      "80"
+      "100"
    },
    {
       "prosystem_pokey_volume",
@@ -266,7 +266,7 @@ struct retro_core_option_definition option_defs_us[] = {
          { "200", "200%" },
          { NULL, NULL },
       },
-      "150"
+      "100"
    },
    {
       "prosystem_bupchip_volume",
@@ -316,7 +316,7 @@ struct retro_core_option_definition option_defs_us[] = {
          { "200", "200%" },
          { NULL, NULL },
       },
-      "150"
+      "100"
    },
    {
       "prosystem_gamepad_dual_stick_hack",
