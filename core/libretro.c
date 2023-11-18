@@ -363,6 +363,27 @@ static void check_variables(bool first_run)
    }
 
 
+   var.key   = "prosystem_tia_volume";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      mixer_SetTiaVolume(strtol(var.value, NULL, 10));
+
+
+   var.key   = "prosystem_pokey_volume";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      mixer_SetPokeyVolume(strtol(var.value, NULL, 10));
+
+
+   var.key   = "prosystem_bupchip_volume";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      mixer_SetBupchipVolume(strtol(var.value, NULL, 10));
+
+
    if (!first_run)
       return;
 

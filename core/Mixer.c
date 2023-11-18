@@ -55,11 +55,11 @@ static int mixer_cycles2 = 0;
 static int mixer_tick = 0;
 static int mixer_tick2 = 0;
 
-static int mixer_volume = 100;
-static int tia_volume = 100;
-static int pokey_volume = 100;
-static int bupchip_volume = 100;
-static int xm_volume = 100;
+static uint16_t mixer_volume = 100;
+static uint16_t tia_volume = 100;
+static uint16_t pokey_volume = 100;
+static uint16_t bupchip_volume = 100;
+static uint16_t ym2141_volume = 100;
 
 void mixer_Reset(void)
 {
@@ -109,6 +109,21 @@ void mixer_Run(int cycles)
 	}
 }
 
+void mixer_SetTiaVolume(uint16_t volume)
+{
+   tia_volume = volume;
+}
+
+void mixer_SetPokeyVolume(uint16_t volume)
+{
+   pokey_volume = volume;
+}
+
+void mixer_SetBupchipVolume(uint16_t volume)
+{
+   bupchip_volume = volume;
+}
+
 void mixer_FrameEnd(void)
 {
    int left, right;
@@ -119,18 +134,6 @@ void mixer_FrameEnd(void)
    static int lowpass_output = 0;
    int factor_a = (0 * 0x10000) / 100;
    int factor_b = 0x10000 - factor_a;
-
-
-#if 0
-   {
-      static int frame = 0;
-      frame++;
-      if (mixer_outCount != tia_outCount)  /* debug assert */
-	     mixer_outCount += 0;
-      if (mixer_outCount != 800 && mixer_rate == 48000)  /* debug assert */
-	     mixer_outCount += 0;
-   }
-#endif
 
 
    for (index = 0; index < tia_outCount; index += 2)

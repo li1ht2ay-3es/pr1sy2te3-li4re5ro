@@ -49,18 +49,21 @@ extern "C" {
 #endif
 
 
-#define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* 192000 stereo x overflow */
-
-extern int16_t mixer_buffer[MAX_SOUND_SAMPLES];
-extern int mixer_outCount;
-extern int mixer_rate;
-
 extern void mixer_Reset(void);
 extern void mixer_Frame(void);
 extern void mixer_Run(int cycles);
 extern void mixer_SetRate(void);
 extern void mixer_FrameEnd(void);
 
+extern void mixer_SetTiaVolume(uint16_t volume);
+extern void mixer_SetPokeyVolume(uint16_t volume);
+extern void mixer_SetBupchipVolume(uint16_t volume);
+
+#define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* 192000 stereo x overflow */
+
+extern int16_t mixer_buffer[MAX_SOUND_SAMPLES];
+extern int mixer_outCount;
+extern int mixer_rate;
 
 #ifdef __cplusplus
 }
