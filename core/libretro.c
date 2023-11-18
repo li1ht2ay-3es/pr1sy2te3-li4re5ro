@@ -247,6 +247,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->valid_extensions = "a78|bin|cdf";
 }
 
+#include <stdio.h>
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    memset(info, 0, sizeof(*info));
@@ -271,6 +272,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
       info->geometry.aspect_ratio = 4.0f / 3.0f;
       break;
    }
+   printf("%d %d %f [%d]\n", videoWidth, videoHeight, info->geometry.aspect_ratio, cartridge_region);
 }
 
 static void update_geometry(void)
