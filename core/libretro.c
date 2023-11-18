@@ -674,13 +674,6 @@ void retro_reset(void)
    prosystem_Reset();
 }
 
-#include <stdio.h>
-void debug(void)
-{
-   if (mixer_outCount != tia_outCount)
-   printf("%X %X - %X\n", tia_outCount, pokey_outCount, mixer_outCount);
-}
-
 void retro_run(void)
 {
    const uint8_t *buffer = NULL;
@@ -710,7 +703,5 @@ void retro_run(void)
    }
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
-   if (audio_batch_cb(mixer_buffer, mixer_outCount) != mixer_outCount)
-      printf("Warn!\n");
-   debug();
+   audio_batch_cb(mixer_buffer, mixer_outCount);
 }
