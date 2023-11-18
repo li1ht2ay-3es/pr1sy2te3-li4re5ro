@@ -62,6 +62,11 @@ static int32_t audio_rate = 48000;
 static int32_t console_region = REGION_AUTO;
 static int32_t display_aspect = 0;
 
+static int32_t left_difficulty = 1;  /* beginner */
+static int32_t right_difficulty = 0;  /* advanced */
+static int32_t left_difficulty_hold = 0;
+static int32_t right_difficulty_hold = 0;
+
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
@@ -227,8 +232,25 @@ static void update_input(void)
    keyboard_data[12] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_X))      ? 1 : 0;
    keyboard_data[13] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)) ? 1 : 0;
    keyboard_data[14] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_START))  ? 1 : 0;
-   keyboard_data[15] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L))      ? 1 : 0;
-   keyboard_data[16] = (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R))      ? 1 : 0;
+
+   if (!left_difficulty_hold && (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)))
+   {
+      left_difficulty ^= 1;
+      left_difficulty_hold = 1;
+   }
+   else if (left_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)))
+      left_difficulty_hold = 0;
+
+   if (!right_difficulty_hold && (joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)))
+   {
+      right_difficulty ^= 1;
+      right_difficulty_hold = 1;
+   }
+   else if (right_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)))
+      right_difficulty_hold = 0;
+
+   keyboard_data[15] = left_difficulty;
+   keyboard_data[16] = right_difficulty;
 }
 
 /************************************
@@ -556,12 +578,12 @@ bool retro_load_game(const struct retro_game_info *info)
     * Left position = (B)eginner, Right position = (A)dvanced
     * Left difficulty switch defaults to left position, "(B)eginner"
     */
-   keyboard_data[15] = 1;
+   left_difficulty = 1;
 
    /* Right difficulty switch defaults to right position,
     * "(A)dvanced", which fixes Tower Toppler
     */
-   keyboard_data[16] = 0;
+   right_difficulty = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
        info_ext->persistent_data)
