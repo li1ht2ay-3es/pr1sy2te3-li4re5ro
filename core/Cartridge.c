@@ -198,7 +198,7 @@ static void cartridge_ReadHeader(const uint8_t* header)
 
    cartridge_controller[0] = header[55];
    cartridge_controller[1] = header[56];
-   cartridge_region        = header[57];
+   cartridge_region        = header[57] & 1;
    cartridge_flags         = 0;
    cartridge_bupchip       = cartridge_type == CARTRIDGE_TYPE_SOUPER;
 

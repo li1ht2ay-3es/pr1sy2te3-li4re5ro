@@ -109,7 +109,6 @@ void mixer_Run(int cycles)
 	}
 }
 
-#include <stdio.h>
 void mixer_FrameEnd(void)
 {
    int left, right;
