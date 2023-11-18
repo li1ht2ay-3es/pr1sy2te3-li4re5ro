@@ -162,12 +162,5 @@ void mixer_FrameEnd(void)
 
       mixer_buffer[index*2 + 0] = (int16_t) left;
       mixer_buffer[index*2 + 1] = (int16_t) right;
-
-
-   {
-      static FILE *fp = 0;
-      if (!fp) fp = fopen("test.bin", "wb");
-      fwrite(&left, 1, 2, fp);
-   }
    }
 }

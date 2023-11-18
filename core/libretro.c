@@ -677,11 +677,8 @@ void retro_reset(void)
 #include <stdio.h>
 void debug(void)
 {
-   static FILE *fp;
-   if (!fp)
-      fp = fopen("log.txt", "w");
-
-   fprintf(fp, "%X %X - %X\n", tia_outCount, pokey_outCount, mixer_outCount);
+   if (mixer_outCount != tia_outCount)
+   printf("%X %X - %X\n", tia_outCount, pokey_outCount, mixer_outCount);
 }
 
 void retro_run(void)
@@ -714,5 +711,5 @@ void retro_run(void)
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
    audio_batch_cb(mixer_buffer, mixer_outCount);
-   //debug();
+   debug();
 }
