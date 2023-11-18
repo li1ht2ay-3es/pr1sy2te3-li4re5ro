@@ -482,7 +482,6 @@ INLINE void pokey_Run(int cycles)
    }
 }
 
-#include <stdio.h>
 void pokey_Output(void)
 {
    static int max = 0;
@@ -508,12 +507,6 @@ void pokey_Output(void)
    /* max = (max < currentValue) ? currentValue : max;  /* debug */
 
    pokey_buffer[pokey_outCount++] = (int16_t) currentValue;
-
-   {
-      static FILE *fp = 0;
-      if (!fp) fp = fopen("test.bin", "wb");
-      fwrite(&currentValue, 1, 2, fp);
-   }
 }
 
 void pokey_LoadState(void)
