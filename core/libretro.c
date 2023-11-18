@@ -710,6 +710,7 @@ void retro_run(void)
    }
 
    video_cb(videoBuffer, videoWidth, videoHeight, videoWidth * videoPixelBytes);
-   audio_batch_cb(mixer_buffer, mixer_outCount);
+   if (audio_batch_cb(mixer_buffer, mixer_outCount) != mixer_outCount)
+      printf("Warn!\n");
    debug();
 }
