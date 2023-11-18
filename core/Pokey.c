@@ -522,6 +522,10 @@ void pokey_LoadState(void)
 
       pokey_divideCount[index] = prosystem_ReadState8();
       pokey_borrowCount[index] = prosystem_ReadState8();
+
+      pokey_lpfOld[index] = ((pokey_output[index] ^ pokey_filter[index]) || (pokey_audc[index] & POKEY_VOLUME_ONLY)) ? pokey_audc[index] & POKEY_VOLUME_MASK : 0;
+	  pokey_lpfNew[index] = pokey_lpfOld[index];
+      pokey_lpfCount[index] = 0;
    }
 
    pokey_audctl = prosystem_ReadState8();

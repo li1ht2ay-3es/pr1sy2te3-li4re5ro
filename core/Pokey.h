@@ -91,6 +91,9 @@ extern void pokey_Run(int cycles);
 extern void pokey_Scanline(void);
 extern void pokey_Output(void);
 
+extern void pokey_LoadState(void);
+extern void pokey_SaveState(void);
+
 extern int16_t pokey_buffer[MAX_SOUND_SAMPLES];
 extern int pokey_outCount;
 

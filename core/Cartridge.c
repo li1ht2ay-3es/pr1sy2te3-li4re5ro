@@ -420,7 +420,7 @@ void cartridge_LoadState(void)
          break;
 
 	  case 1:
-         /* pokey1 */
+         pokey_LoadState();
          break;
 
 	  case 2:
@@ -452,6 +452,13 @@ void cartridge_SaveState(void)
 
       prosystem_WriteState32(memory_exram_size);
       prosystem_WriteStatePtr(memory_exram, memory_exram_size);
+   }
+
+   if (cartridge_pokey)
+   {
+      prosystem_WriteState8(1);
+
+      pokey_SaveState();
    }
 
    if (cartridge_bupchip)
