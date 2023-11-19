@@ -28,6 +28,7 @@
 #include "Palette.h"
 #include "Bios.h"
 #include "Region.h"
+#include "HighScore.h"
 
 #ifdef _3DS
 extern void* linearMemAlign(size_t size, size_t alignment);
@@ -58,14 +59,19 @@ static int32_t low_pass_prev           = 0; /* Previous sample */
 #define FAST_SAVE_STATE_SIZE           0x30000
 static bool fast_savestates;
 
-static int32_t audio_rate = 48000;
-static int32_t console_region = REGION_AUTO;
-static int32_t display_aspect = 0;
+static bool first_frame = true;
 
-static int32_t left_difficulty = 1;  /* beginner */
-static int32_t right_difficulty = 0;  /* advanced */
-static int32_t left_difficulty_hold = 0;
-static int32_t right_difficulty_hold = 0;
+static int audio_rate = 48000;
+static int console_region = REGION_AUTO;
+static int display_aspect = 0;
+
+static int left_difficulty = 1;  /* beginner */
+static int right_difficulty = 0;  /* advanced */
+static int left_difficulty_hold = 0;
+static int right_difficulty_hold = 0;
+
+static int highscore_save = 0;
+static int highscore_name = 0;
 
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
@@ -443,6 +449,36 @@ static void check_variables(bool first_run)
 	  else if (strcmp(var.value, "PAL") == 0)
 	     region_type = REGION_PAL;
    }
+
+
+   var.key   = "prosystem_highscore_save";
+   var.value = NULL;
+
+   highscore_save = 0;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "Per-Game") == 0)
+	     highscore_save = 1;
+   }
+
+
+   var.key   = "prosystem_highscore_name";
+   var.value = NULL;
+
+   highscore_name = 0;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "Per-Game") == 0)
+	     highscore_name = 1;
+
+	  else if (strcmp(var.value, "None") == 0)
+         highscore_name = 2;
+
+	  else if (strcmp(var.value, "Prosystem") == 0)
+         highscore_name = 3;
+   }
 }
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -572,8 +608,6 @@ bool retro_load_game(const struct retro_game_info *info)
       }
    }
 
-   memset(keyboard_data, 0, sizeof(keyboard_data));
-
    /* Difficulty switches: 
     * Left position = (B)eginner, Right position = (A)dvanced
     * Left difficulty switch defaults to left position, "(B)eginner"
@@ -626,10 +660,26 @@ bool retro_load_game(const struct retro_game_info *info)
    if (bios_Load(biospath))
       bios_enabled = true;
 
+   /* High Score Cart is optional */
+   if (cartridge_region == REGION_PAL)
+      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore (E).rom");
+   else
+      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore (U).rom");
+
+   if (highscore_Load(biospath))
+   {
+      if (highscore_save == 0)  /* global */
+      {
+         sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
+         highscore_ReadNvram(biospath);
+      }
+   }
+
    prosystem_Reset();
 
    display_ResetPalette();
 
+   first_frame = true;
    return true;
 }
 
@@ -643,8 +693,22 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game(void) 
 {
+   char biospath[512];
+   const char *system_directory_c             = NULL;
+#ifdef _WIN32
+   char slash = '\\';
+#else
+   char slash = '/';
+#endif
+
    prosystem_Close(persistent_data);
-   bios_Release();
+
+   if (highscore_enabled && highscore_save == 0)
+   {
+      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
+      highscore_WriteNvram(biospath);
+   }
+
    persistent_data = false;
 }
 
@@ -660,16 +724,37 @@ unsigned retro_api_version(void)
 
 void *retro_get_memory_data(unsigned id)
 {
-    if ( id == RETRO_MEMORY_SYSTEM_RAM )
-        return memory_ram;
-    return NULL;
+   void* data = NULL;
+
+   switch(id)
+   {
+   case RETRO_MEMORY_SAVE_RAM:
+      if (highscore_enabled && highscore_save == 1)
+         data = memory_nvram;
+      break;
+
+   case RETRO_MEMORY_SYSTEM_RAM:
+      data = memory_ram;
+      break;
+   }
+
+   return data;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-    if ( id == RETRO_MEMORY_SYSTEM_RAM )
-        return MEMORY_SIZE;
-    return 0;
+   switch(id)
+   {
+   case RETRO_MEMORY_SAVE_RAM:
+      if (highscore_enabled && highscore_save == 1)
+         return 0x800;
+      break;
+
+   case RETRO_MEMORY_SYSTEM_RAM:
+      return 0x1000;
+   }
+
+   return 0;
 }
 
 void retro_init(void)
@@ -723,6 +808,17 @@ void retro_run(void)
    uint32_t video_pitch  = 320;
    bool options_updated  = false;
 
+   if (first_frame)
+   {
+      first_frame = false;
+
+      if (highscore_name == 2)
+         highscore_SetName(" ");
+
+      else if (highscore_name == 3)
+         highscore_SetName("PROSYSTEM");
+   }
+
    videoWidth  = Rect_GetLength(&maria_visibleArea);
    videoHeight = Rect_GetHeight(&maria_visibleArea);
 
@@ -735,7 +831,6 @@ void retro_run(void)
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
 
    buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
-
    if (videoPixelBytes == 2)
    {
       BLIT_VIDEO_BUFFER(uint16_t, buffer, display_palette16, videoWidth, videoHeight, video_pitch, videoBuffer);

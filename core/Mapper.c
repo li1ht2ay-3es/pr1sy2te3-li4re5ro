@@ -28,6 +28,7 @@
 #include "Mapper.h"
 #include "Memory.h"
 #include "Pokey.h"
+#include "HighScore.h"
 
 #include "Linear.h"
 #include "SuperGame.h"
@@ -35,7 +36,7 @@
 #include "Absolute.h"
 #include "Souper.h"
 
-static void exram_map(void)
+static void exram_Map(void)
 {
    uint32_t addr;
 
@@ -156,7 +157,8 @@ void mapper_Map(void)
       break;
    }
 
-   exram_map();
+   exram_Map();
+   highscore_Map();
 }
 
 uint8_t mapper_Read(uint16_t address)

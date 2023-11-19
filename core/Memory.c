@@ -35,8 +35,13 @@
 #include "Mapper.h"
 
 uint8_t memory_ram[MEMORY_SIZE] = {0};
+
 uint8_t memory_exram[MEMORY_EXRAM_SIZE] = {0};
 uint32_t memory_exram_size = 0;
+
+uint8_t memory_nvram[MEMORY_NVRAM_SIZE] = {0};
+uint32_t memory_nvram_size = 0;
+
 
 uint8_t memory_ReadOpenBus(uint16_t address)
 {

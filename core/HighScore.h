@@ -20,11 +20,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * Bios.h
+ * HighScore.h
  * ----------------------------------------------------------------------------
  */
-#ifndef BIOS_H
-#define BIOS_H
+#ifndef HIGHSCORE_H
+#define HIGHSCORE_H
 
 #include <stdint.h>
 #include <boolean.h>
@@ -33,14 +33,18 @@
 extern "C" {
 #endif
 
-extern bool bios_Load(const char *filename);
-extern void bios_Release(void);
+extern bool highscore_Load(const char *filename);
+extern void highscore_Release(void);
 
-extern bool bios_IsMapped(void);
-extern void bios_Map(void);
+extern bool highscore_ReadNvram(const char *filename);
+extern bool highscore_WriteNvram(const char *filename);
+extern void highscore_SetName(const char *name);
 
-extern bool bios_enabled;
-extern uint32_t bios_size;
+extern bool highscore_IsMapped(void);
+extern void highscore_Map(void);
+
+extern bool highscore_enabled;
+extern uint32_t highscore_size;
 
 #ifdef __cplusplus
 }

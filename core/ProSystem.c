@@ -206,9 +206,7 @@ void prosystem_Close(bool persistent_data)
 {
    bupchip_Release();
    cartridge_Release(persistent_data);
-   maria_Reset();
-   memory_Reset();
-   tia_Reset();
+   
 }
 
 bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves)

@@ -28,6 +28,7 @@
 
 #define MEMORY_SIZE 0x10000
 #define MEMORY_EXRAM_SIZE 0x8000
+#define MEMORY_NVRAM_SIZE 0x1000
 
 #include <stdint.h>
 
@@ -48,8 +49,12 @@ extern void memory_SaveState(void);
 extern void memory_LoadState(void);
 
 extern uint8_t memory_ram[MEMORY_SIZE];
+
 extern uint8_t memory_exram[MEMORY_EXRAM_SIZE];
 extern uint32_t memory_exram_size;
+
+extern uint8_t memory_nvram[MEMORY_NVRAM_SIZE];
+extern uint32_t memory_nvram_size;
 
 #ifdef __cplusplus
 }

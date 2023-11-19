@@ -37,7 +37,7 @@ extern int64_t rfread(void* buffer, size_t elem_size, size_t elem_count, RFILE* 
 bool bios_enabled = false;
 
 static uint8_t* bios_data = NULL;
-uint16_t bios_size = 0;
+uint32_t bios_size = 0;
 
 bool bios_Load(const char *filename)
 {
