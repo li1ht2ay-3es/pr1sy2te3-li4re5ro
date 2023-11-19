@@ -293,7 +293,6 @@ void bupchip_Reset(void)
    memset(&bupchip_buffer, 0, sizeof(bupchip_buffer));
 }
 
-#include <stdio.h>
 void bupchip_LoadState(void)
 {
    uint8_t new_song;
@@ -305,15 +304,14 @@ void bupchip_LoadState(void)
    new_flags = prosystem_ReadState8();
 
 
-   printf("%d %d - %d %d - %d %d\n", bupchip_current_song, new_song, bupchip_volume, new_volume, bupchip_flags, new_flags);
-
    if (new_song != bupchip_current_song)
    {
       ct_stopAll();
       bupchip_Play(new_song);
    }
 
-   ct_attenMusic(new_volume);
+   bupchip_volume = new_volume;
+   ct_attenMusic(bupchip_volume);
 
    if ((new_flags & BUPCHIP_FLAGS_PLAYING) == 0)
    {
