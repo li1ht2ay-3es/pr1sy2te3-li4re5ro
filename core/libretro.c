@@ -70,8 +70,8 @@ static int right_difficulty = 0;  /* advanced */
 static int left_difficulty_hold = 0;
 static int right_difficulty_hold = 0;
 
-static int highscore_save = 0;
-static int highscore_name = 0;
+static int highscore_save = 1;  /* global */
+static int highscore_name = 2;  /* global */
 
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
@@ -454,30 +454,33 @@ static void check_variables(bool first_run)
    var.key   = "prosystem_highscore_save";
    var.value = NULL;
 
-   highscore_save = 0;
+   highscore_save = 1;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-	  if (strcmp(var.value, "Per-Game") == 0)
-	     highscore_save = 1;
+	  if (strcmp(var.value, "Disabled") == 0)
+	     highscore_save = 0;
+
+	  else if (strcmp(var.value, "Per-Game") == 0)
+	     highscore_save = 2;
    }
 
 
    var.key   = "prosystem_highscore_name";
    var.value = NULL;
 
-   highscore_name = 0;
+   highscore_name = 2;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-	  if (strcmp(var.value, "Per-Game") == 0)
-	     highscore_name = 1;
-
-	  else if (strcmp(var.value, "None") == 0)
-         highscore_name = 2;
+	  if (strcmp(var.value, "None") == 0)
+         highscore_name = 0;
 
 	  else if (strcmp(var.value, "Prosystem") == 0)
-         highscore_name = 3;
+         highscore_name = 1;
+
+	  else if (strcmp(var.value, "Per-Game") == 0)
+	     highscore_name = 3;
    }
 }
 
@@ -668,7 +671,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (highscore_Load(biospath))
    {
-      if (highscore_save == 0)  /* global */
+      if (highscore_save == 1)  /* global */
       {
          sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
          highscore_ReadNvram(biospath);
@@ -705,7 +708,7 @@ void retro_unload_game(void)
 
    prosystem_Close(persistent_data);
 
-   if (highscore_enabled && highscore_save == 0)
+   if (highscore_enabled && highscore_save == 1)
    {
       sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
       highscore_WriteNvram(biospath);
@@ -731,7 +734,7 @@ void *retro_get_memory_data(unsigned id)
    switch(id)
    {
    case RETRO_MEMORY_SAVE_RAM:
-      if (highscore_enabled && highscore_save == 1)
+      if (highscore_enabled && highscore_save == 2)  /* per game */
          data = memory_nvram;
       break;
 
@@ -748,7 +751,7 @@ size_t retro_get_memory_size(unsigned id)
    switch(id)
    {
    case RETRO_MEMORY_SAVE_RAM:
-      if (highscore_enabled && highscore_save == 1)
+      if (highscore_enabled && highscore_save == 2)  /* per game */
          return 0x800;
       break;
 
@@ -814,10 +817,10 @@ void retro_run(void)
    {
       first_frame = false;
 
-      if (highscore_name == 2)
+      if (highscore_name == 0)
          highscore_SetName(" ");
 
-      else if (highscore_name == 3)
+      else if (highscore_name == 1)
          highscore_SetName("PROSYSTEM");
    }
 

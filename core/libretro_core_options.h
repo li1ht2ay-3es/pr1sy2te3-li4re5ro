@@ -334,6 +334,7 @@ struct retro_core_option_definition option_defs_us[] = {
       "High Score Cart Saving (Restart core)",
       "Save scope.",
       {
+         { "Disabled", NULL},
          { "Global", NULL},
          { "Per-Game",  NULL},
          { NULL, NULL },
@@ -345,10 +346,10 @@ struct retro_core_option_definition option_defs_us[] = {
       "High Score Cart Name (Restart core)",
       "Personalization name.",
       {
-         { "Global", NULL},
-         { "Per-Game",  NULL},
          { "None", NULL},
          { "Prosystem", NULL},
+         { "Global", NULL},
+         { "Per-Game",  NULL},
          { NULL, NULL },
       },
       "Global"
