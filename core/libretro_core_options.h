@@ -354,6 +354,17 @@ struct retro_core_option_definition option_defs_us[] = {
       },
       "Global"
    },
+   {
+      "prosystem_bios_startup",
+      "Skip BIOS animation",
+      "Start game directly.",
+      {
+         { "disabled", NULL},
+         { "enabled", NULL},
+         { NULL, NULL },
+      },
+      "disabled"
+   },
    { NULL, NULL, NULL, {{0}}, NULL },
 };
 

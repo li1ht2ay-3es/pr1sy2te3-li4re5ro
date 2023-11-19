@@ -73,6 +73,8 @@ static int right_difficulty_hold = 0;
 static int highscore_save = 1;  /* global */
 static int highscore_name = 2;  /* global */
 
+static int bios_startup = 1;
+
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
@@ -412,6 +414,18 @@ static void check_variables(bool first_run)
       mixer_SetBupchipVolume(strtol(var.value, NULL, 10));
 
 
+   var.key   = "prosystem_bios_startup";
+   var.value = NULL;
+
+   bios_startup = 1;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	  if (strcmp(var.value, "disabled") == 0)
+         bios_startup = 0;
+   }
+
+
    if (!first_run)
       return;
 
@@ -682,6 +696,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    display_ResetPalette();
 
+   if (!bios_startup)
+      tia_Write(INPTCTRL, 22);
+
    first_frame = true;
    return true;
 }
@@ -805,6 +822,9 @@ void retro_deinit(void)
 void retro_reset(void)
 {
    prosystem_Reset();
+
+   if (!bios_startup)
+      tia_Write(INPTCTRL, 22);
 }
 
 void retro_run(void)
