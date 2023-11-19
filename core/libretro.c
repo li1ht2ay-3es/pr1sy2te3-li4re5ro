@@ -701,6 +701,8 @@ void retro_unload_game(void)
    char slash = '/';
 #endif
 
+   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_directory_c);
+
    prosystem_Close(persistent_data);
 
    if (highscore_enabled && highscore_save == 0)
