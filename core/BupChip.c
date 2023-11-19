@@ -202,6 +202,7 @@ void bupchip_ProcessAudioCommand(unsigned char data)
 
    case 0x80:
       bupchip_Play(data & 0x1f);
+      bupchip_Resume();
       break;
 
    case 0xc0:
@@ -305,10 +306,7 @@ void bupchip_LoadState(void)
 
 
    if (new_song != bupchip_current_song)
-   {
-      ct_stopAll();
       bupchip_Play(new_song);
-   }
 
    bupchip_volume = new_volume;
    ct_attenMusic(bupchip_volume);
