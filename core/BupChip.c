@@ -293,6 +293,7 @@ void bupchip_Reset(void)
    memset(&bupchip_buffer, 0, sizeof(bupchip_buffer));
 }
 
+#include <stdio.h>
 void bupchip_LoadState(void)
 {
    uint8_t new_song;
@@ -303,6 +304,8 @@ void bupchip_LoadState(void)
    new_volume = prosystem_ReadState8();
    new_flags = prosystem_ReadState8();
 
+
+   printf("%d %d - %d %d - %d %d\n", bupchip_current_song, new_song, bupchip_volume, new_volume, bupchip_flags, new_flags);
 
    if (new_song != bupchip_current_song)
    {
