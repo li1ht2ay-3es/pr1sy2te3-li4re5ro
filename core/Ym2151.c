@@ -43,7 +43,7 @@ static int ym2151_lpfOld[2] = {0};
 static int ym2151_lpfNew[2] = {0};
 
 
-#define NUKED_OPM  /* slow but works */
+#define NUKED_OPM  /* slow but kinda works */
 
 
 #ifdef NUKED_OPM
@@ -80,8 +80,6 @@ void ym2151_Write(uint16_t address, uint8_t data)
 void ym2151_Run(int cycles)
 {
    int index;
-
-   return;
 
    for (index = 0; index < cycles / 2; index++)  /* Maria 1/2 ~ 3.5 MHz */
    {
