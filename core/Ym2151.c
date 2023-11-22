@@ -48,7 +48,7 @@ static int ym2151_lpfNew[2] = {0};
 
 #ifdef NUKED_OPM
 
-#include "../Nuked/opm.h"
+#include "../nuked/opm.h"
 static opm_t opm;  /* ym2151 */
 
 static int32_t ym2151_out[2];

@@ -195,13 +195,17 @@ static void highscore_initram(void)
    if (memcmp(memory_nvram + 2, magic, 5) == 0)
       return;
 
-   memcpy(memory_nvram + 2, magic, 5);  /* reset */
+   memset(memory_nvram, 0, sizeof(memory_nvram));
+
+   memcpy(memory_nvram + 2, magic, 5);
    memset(memory_nvram + 0xb3, 0x7f, 0x8a);
 }
 
 void highscore_SetName(const char *name)
 {
    uint8_t index;
+
+   highscore_initram();
 
    for (index = 0; index < strlen(name); index++)
    {
@@ -226,8 +230,6 @@ void highscore_SetName(const char *name)
 
    memory_nvram[8 + index] = 0x1f;
    memory_nvram[0x28] = strlen(name);
-
-   highscore_initram();
 }
 
 bool highscore_IsMapped(void)
