@@ -73,6 +73,8 @@ static int right_difficulty_hold = 0;
 static int highscore_save = 1;  /* global */
 static int highscore_name = 2;  /* global */
 
+static char highscore_globalname[33];
+
 static int bios_startup = 1;
 
 static retro_log_printf_t log_cb;
@@ -393,6 +395,13 @@ static void check_variables(bool first_run)
    }
 
 
+   var.key   = "prosystem_mixer_volume";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      mixer_SetMixerVolume(strtol(var.value, NULL, 10));
+
+
    var.key   = "prosystem_tia_volume";
    var.value = NULL;
 
@@ -685,11 +694,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (highscore_Load(biospath))
    {
-      if (highscore_save == 1)  /* global */
-      {
-         sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
-         highscore_ReadNvram(biospath);
-      }
+      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
+      highscore_ReadNvram(biospath);  /* per core overwrites later */
+
+      memcpy(highscore_globalname, memory_nvram + 8, 33);
    }
 
    prosystem_Reset();
@@ -725,10 +733,15 @@ void retro_unload_game(void)
 
    prosystem_Close(persistent_data);
 
-   if (highscore_enabled && highscore_save == 1)
+   if (highscore_enabled)
    {
       sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
-      highscore_WriteNvram(biospath);
+
+      if (highscore_save == 1)  /* global */
+         highscore_WriteNvram(biospath);
+
+	  else if (highscore_name == 2)  /* global */
+         highscore_WriteNvramName(biospath, highscore_globalname);
    }
 
    persistent_data = false;
@@ -833,15 +846,22 @@ void retro_run(void)
    uint32_t video_pitch  = 320;
    bool options_updated  = false;
 
+
    if (first_frame)
    {
       first_frame = false;
 
-      if (highscore_name == 0)
-         highscore_SetName(" ");
+      if (highscore_enabled)
+	  {
+         if (highscore_name == 0)
+            highscore_SetName(" ");
 
-      else if (highscore_name == 1)
-         highscore_SetName("PROSYSTEM");
+         else if (highscore_name == 1)
+            highscore_SetName("PROSYSTEM");
+
+	     else if (highscore_name == 2)  /* use global name */
+            memcpy(memory_nvram + 8, highscore_globalname, 33);
+	  }
    }
 
    videoWidth  = Rect_GetLength(&maria_visibleArea);

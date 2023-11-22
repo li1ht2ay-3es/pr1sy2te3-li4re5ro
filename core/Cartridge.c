@@ -31,6 +31,7 @@
 #include "BupChip.h"
 #include "Mapper.h"
 #include "Database.h"
+#include "Ym2151.h"
 #include <streams/file_stream.h>
 
 char cartridge_digest[33];
@@ -45,6 +46,8 @@ uint8_t cartridge_flags;
 uint8_t cartridge_pokey;
 uint8_t cartridge_ym2151;
 uint8_t cartridge_bupchip;
+uint8_t cartridge_xm;
+uint8_t cartridge_xm_hsc;
 
 uint8_t cartridge_bankset;
 uint8_t cartridge_exrom;
@@ -54,11 +57,8 @@ uint8_t cartridge_exram_m2;
 uint8_t cartridge_exram_x2;
 uint8_t cartridge_exram_a8;
 
-uint8_t* cartridge_buffer      = NULL;
+uint8_t* cartridge_buffer = NULL;
 uint32_t cartridge_size = 0;
-
-uint8_t exram_buffer[0x8000];
-uint8_t banksets_memory[64*1024];
 
 char* cartridge_GetNextNonemptyLine(const char **stream, size_t* size)
 {
@@ -166,7 +166,10 @@ static void cartridge_ReadHeader(const uint8_t* header)
       cartridge_exram_x2 = 1;
 
    if (cardtype & 0x0040)  /* pokey 1 */
+   {
       cartridge_pokey = POKEY_AT_450;
+      cartridge_xm = 1;
+   }
 
    if (cardtype & 0x0080)  /* 2KB mirror ram */
       cartridge_exram_a8 = 1;
@@ -178,10 +181,16 @@ static void cartridge_ReadHeader(const uint8_t* header)
       cartridge_type = CARTRIDGE_TYPE_ABSOLUTE;
 
    if (cardtype & 0x0400)  /* pokey 2 */
+   {
       cartridge_pokey = POKEY_AT_440;
+      cartridge_xm = 1;
+   }
 
    if (cardtype & 0x0800)
+   {
       cartridge_ym2151 = 1;
+      cartridge_xm = 1;
+   }
 
    if (cardtype & 0x1000)
       cartridge_type = CARTRIDGE_TYPE_SOUPER;
@@ -320,6 +329,7 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
    cartridge_pokey = POKEY_NONE;
    cartridge_ym2151 = 0;
    cartridge_bupchip = 0;
+   cartridge_xm = 0;
 
    if(cartridge_HasHeader(header))
    {
@@ -351,22 +361,22 @@ void cartridge_Reset(void)
    mapper_Reset();
 }
 
-INLINE void cartridge_MapBios(void)
+void cartridge_MapBios(void)
 {
    mapper_MapBios();
 }
 
-INLINE void cartridge_Map(void)
+void cartridge_Map(void)
 {
    mapper_Map();
 }
 
-INLINE uint8_t cartridge_Read(uint16_t address)
+uint8_t cartridge_Read(uint16_t address)
 {
    return mapper_Read(address);
 }
 
-INLINE void cartridge_Write(uint16_t address, uint8_t data)
+void cartridge_Write(uint16_t address, uint8_t data)
 {
    mapper_Write(address, data);
 }
@@ -387,13 +397,16 @@ void cartridge_Release(bool persistent_data)
    cartridge_size   = 0;
 }
 
-INLINE void cartridge_Run(int cycles)
+void cartridge_Run(int cycles)
 {
    if (cartridge_pokey)
       pokey_Run(cycles);
+
+   if (cartridge_ym2151)
+      ym2151_Run(cycles);
 }
 
-INLINE void cartridge_ScanlineEnd(void)
+void cartridge_ScanlineEnd(void)
 {
    if (cartridge_bupchip)
       bupchip_ScanlineEnd();

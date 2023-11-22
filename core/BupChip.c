@@ -232,7 +232,7 @@ void bupchip_Release(void)
    bupchip_sample_data     = NULL;
 }
 
-INLINE void bupchip_ScanlineEnd()
+void bupchip_ScanlineEnd()
 {
    out_clock--;
    if (out_clock > 0)  /* 240 Hz ~ 1/4 frame */
@@ -258,14 +258,9 @@ INLINE void bupchip_ScanlineEnd()
 
 void bupchip_Output()
 {
-   if (!cartridge_bupchip)
-   {
-      bupchip_buffer[bupchip_outCount + 0] = 0;
-      bupchip_buffer[bupchip_outCount + 1] = 0;
-      bupchip_outCount += 2;
-   }
-
    /* stream decoder */
+
+   /* note: seems to play at 1/2 unscaled volume (7f max) */
 }
 
 void bupchip_Frame(void)

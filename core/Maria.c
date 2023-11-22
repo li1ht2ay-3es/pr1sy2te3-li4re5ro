@@ -67,11 +67,12 @@ void maria_SetRead(uint32_t start, uint32_t stop, uint8_t *chr)
    {
       maria_readmap[start++] = chr;
 
-      chr += 0x40;
+      if (chr)
+         chr += 0x40;
    }
 }
 
-INLINE uint8_t maria_Read(uint16_t address)
+uint8_t maria_Read(uint16_t address)
 {
    switch (address)
    {
@@ -82,7 +83,7 @@ INLINE uint8_t maria_Read(uint16_t address)
    return 0xff;
 }
 
-INLINE void maria_Write(uint16_t address, uint8_t data)
+void maria_Write(uint16_t address, uint8_t data)
 {
    switch (address)
    {
@@ -99,14 +100,14 @@ INLINE void maria_Write(uint16_t address, uint8_t data)
    }
 }
 
-static INLINE void maria_AddCycles(int cycles)
+static void maria_AddCycles(int cycles)
 {
    /* future use */
 
    maria_cycles += cycles;
 }
 
-static INLINE uint8_t maria_ReadByte(uint16_t address)
+static uint8_t maria_ReadByte(uint16_t address)
 {
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
@@ -118,7 +119,7 @@ static INLINE uint8_t maria_ReadByte(uint16_t address)
       return memory_Read(address);
 }
 
-static INLINE void maria_StoreCell(uint8_t data)
+static void maria_StoreCell(uint8_t data)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
@@ -132,7 +133,7 @@ static INLINE void maria_StoreCell(uint8_t data)
    maria_horizontal++;
 }
 
-static INLINE void maria_StoreCell2(uint8_t high, uint8_t low)
+static void maria_StoreCell2(uint8_t high, uint8_t low)
 {
    if (maria_horizontal < MARIA_LINERAM_SIZE)
    {
@@ -140,13 +141,13 @@ static INLINE void maria_StoreCell2(uint8_t high, uint8_t low)
          maria_lineRAM[maria_horizontal] = (maria_palette & 0x10) | high | low;
 
       else if (maria_ctrl & 0x04)
-         maria_lineRAM[maria_horizontal] = 0;
+         maria_lineRAM[maria_horizontal] = (maria_palette & 0x10) | high | low;
    }
 
    maria_horizontal++;
 }
 
-static INLINE bool maria_IsHoleyDMA(uint16_t address)
+static bool maria_IsHoleyDMA(uint16_t address)
 {
    if (address & 0x8000)
    {
@@ -157,12 +158,12 @@ static INLINE bool maria_IsHoleyDMA(uint16_t address)
    return false;
 }
 
-static INLINE uint8_t maria_GetColor(uint8_t data)
+static uint8_t maria_GetColor(uint8_t data)
 {
    return memory_ram[BACKGRND + ((data & 3) ? data : 0)];
 }
 
-static INLINE void maria_StoreGraphic(uint8_t data, bool is_holey)
+static void maria_StoreGraphic(uint8_t data, bool is_holey)
 {
    if (!is_holey)
    {
@@ -434,12 +435,12 @@ void maria_Reset(void)
    memset(maria_readmap, 0, sizeof(maria_readmap));
 }
 
-INLINE int maria_Run(void)
+int maria_Run(void)
 {
    return maria_RenderScanline();
 }
 
-INLINE void maria_Scanline(void)
+void maria_Scanline(void)
 {
    memory_ram[MSTAT] = (maria_scanline < maria_displayArea.top || maria_scanline > maria_displayArea.bottom) ? 0x80 : 0x00;
    memory_ram[WSYNC] = false;

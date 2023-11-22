@@ -49,6 +49,7 @@
 #include "Tia.h"
 #include "Pokey.h"
 #include "BupChip.h"
+#include "Ym2151.h"
 
 #define PRO_SYSTEM_STATE_HEADER "PRO-SYSTEM STATE"
 
@@ -64,6 +65,8 @@ static void prosystem_Map()
 
    if (bios_enabled)
       bios_Map();
+
+   memory_Map();  /* high priority = overwrite anything above */
 }
 
 void prosystem_Reset()
@@ -82,6 +85,7 @@ void prosystem_Reset()
    tia_Reset();
    pokey_Reset();
    bupchip_Reset();
+   ym2151_Reset();
    /* cartridge_LoadHighScoreCart(); */
 
    cartridge_Reset();
@@ -137,7 +141,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
    tia_Frame();
    pokey_Frame();
    bupchip_Frame();
-
+   ym2151_Frame();
 
    maria_scanline = maria_displayArea.bottom + 1;  /* vblank start */
    riot_SetInput(input);
@@ -169,7 +173,8 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       /* 28-x = maria render */
       {
          cycles = maria_Run();
-         if (cycles + prosystem_cycles > CYCLES_PER_SCANLINE) cycles = CYCLES_PER_SCANLINE - prosystem_cycles;
+         if (cycles + prosystem_cycles > CYCLES_PER_SCANLINE)
+            cycles = CYCLES_PER_SCANLINE - prosystem_cycles;
 
          prosystem_Run(cycles);
       }
@@ -206,7 +211,6 @@ void prosystem_Close(bool persistent_data)
 {
    bupchip_Release();
    cartridge_Release(persistent_data);
-   
 }
 
 bool prosystem_LoadState(const uint8_t *buffer, bool fast_saves)

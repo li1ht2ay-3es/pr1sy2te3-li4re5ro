@@ -55,11 +55,14 @@ extern void mixer_Run(int cycles);
 extern void mixer_SetRate(void);
 extern void mixer_FrameEnd(void);
 
+extern void mixer_SetMixerVolume(uint16_t volume);
 extern void mixer_SetTiaVolume(uint16_t volume);
 extern void mixer_SetPokeyVolume(uint16_t volume);
 extern void mixer_SetBupchipVolume(uint16_t volume);
+extern void mixer_SetCovoxVolume(uint16_t volume);
 
-#define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* 192000 stereo x overflow */
+
+#define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* stereo + overflow */
 
 extern int16_t mixer_buffer[MAX_SOUND_SAMPLES];
 extern int mixer_outCount;

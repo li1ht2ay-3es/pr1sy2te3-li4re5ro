@@ -29,6 +29,7 @@
 #include "Memory.h"
 #include "Pokey.h"
 #include "HighScore.h"
+#include "Ym2151.h"
 
 #include "Linear.h"
 #include "SuperGame.h"
@@ -134,7 +135,11 @@ void mapper_MapBios(void)
 
 void mapper_Map(void)
 {
-   switch (cartridge_type)
+   highscore_Map();  /* low priority */
+   exram_Map();
+
+
+   switch (cartridge_type)  /* rom gets high priority */
    {
    case CARTRIDGE_TYPE_LINEAR:
       linear_Map();
@@ -156,9 +161,6 @@ void mapper_Map(void)
       souper_Map();
       break;
    }
-
-   exram_Map();
-   highscore_Map();
 }
 
 uint8_t mapper_Read(uint16_t address)
@@ -173,6 +175,11 @@ uint8_t mapper_Read(uint16_t address)
    {
       if (cartridge_pokey == POKEY_AT_450)  /* pokey 1 */
          return pokey_Read(address);
+   }
+
+   if (address >= 0x460 && address < 0x470)
+   {
+      return ym2151_Read(address);
    }
 
    if (address >= 0x470 && address < 0x480)
@@ -235,8 +242,19 @@ void mapper_Write(uint16_t address, uint8_t data)
          pokey_Write(address, data);
    }
 
+   else if (address >= 0x460 && address < 0x470)
+   {
+      //cartridge_ym2151 = 1;
+      ym2151_Write(address, data);
+   }
+
    else if (address >= 0x470 && address < 0x480)
    {
+      if (data & 0x08)  /* XM highscore */
+	  {
+         cartridge_xm_hsc = 1;
+         highscore_Map();
+	  }
       return;  /* xm */
    }
 

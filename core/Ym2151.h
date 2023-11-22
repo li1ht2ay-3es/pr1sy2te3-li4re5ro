@@ -20,32 +20,31 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * ----------------------------------------------------------------------------
- * HighScore.h
+ * Ym2151.h
  * ----------------------------------------------------------------------------
  */
-#ifndef HIGHSCORE_H
-#define HIGHSCORE_H
+#ifndef YM2151_H
+#define YM2151_H
 
 #include <stdint.h>
-#include <boolean.h>
+#include <stddef.h>
+
+#include "Mixer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern bool highscore_Load(const char *filename);
-extern void highscore_Release(void);
+extern void ym2151_Reset(void);
+extern void ym2151_Frame(void);
+extern void ym2151_Run(int cycles);
+extern void ym2151_Output(void);
 
-extern bool highscore_ReadNvram(const char *filename);
-extern bool highscore_ReadNvramName(const char *filename, char *buffer);
-extern bool highscore_WriteNvram(const char *filename);
-extern bool highscore_WriteNvramName(const char *filename, const char *buffer);
+extern uint8_t ym2151_Read(uint16_t address);
+extern void ym2151_Write(uint16_t address, uint8_t data);
 
-extern void highscore_SetName(const char *name);
-extern bool highscore_IsMapped(void);
-extern void highscore_Map(void);
-
-extern bool highscore_enabled;
+extern int16_t ym2151_buffer[MAX_SOUND_SAMPLES * 2];
+extern int ym2151_outCount;
 
 #ifdef __cplusplus
 }

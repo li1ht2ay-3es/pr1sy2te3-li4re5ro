@@ -99,7 +99,7 @@ struct retro_core_option_definition option_defs_us[] = {
    {
       "prosystem_tia_lowpass",
       "TIA Audio Filter",
-      "Remove harsh high frequency sounds.",
+      "Remove higher frequency sounds.",
       {
          { "3", "10 KHz" },
          { "2", "15 KHz" },
@@ -111,7 +111,7 @@ struct retro_core_option_definition option_defs_us[] = {
    {
       "prosystem_pokey_lowpass",
       "POKEY Audio Filter",
-      "Remove harsh high frequency sounds.",
+      "Remove higher frequency sounds.",
       {
          { "150", "12 KHz" },
          { "138", "13 KHz" },
@@ -167,6 +167,56 @@ struct retro_core_option_definition option_defs_us[] = {
          { NULL, NULL },
       },
       "60"
+   },
+   {
+      "prosystem_mixer_volume",
+      "Mixer Volume Level",
+      "Loudness slider.",
+      {
+         { "0",  "0%" },
+         { "5",  "5%" },
+         { "10", "10%" },
+         { "15", "15%" },
+         { "20", "20%" },
+         { "25", "25%" },
+         { "30", "30%" },
+         { "35", "35%" },
+         { "40", "40%" },
+         { "45", "45%" },
+         { "50", "50%" },
+         { "55", "55%" },
+         { "60", "60%" },
+         { "65", "65%" },
+         { "70", "70%" },
+         { "75", "75%" },
+         { "80", "80%" },
+         { "85", "85%" },
+         { "90", "90%" },
+         { "95", "95%" },
+         { "100", "100%" },
+         { "105", "105%" },
+         { "110", "110%" },
+         { "115", "115%" },
+         { "120", "120%" },
+         { "125", "125%" },
+         { "130", "130%" },
+         { "135", "135%" },
+         { "140", "140%" },
+         { "145", "145%" },
+         { "150", "150%" },
+         { "155", "155%" },
+         { "160", "160%" },
+         { "165", "165%" },
+         { "170", "170%" },
+         { "175", "175%" },
+         { "180", "180%" },
+         { "185", "185%" },
+         { "190", "190%" },
+         { "195", "195%" },
+         { "200", "200%" },
+         { NULL, NULL },
+      },
+      "100"
    },
    {
       "prosystem_tia_volume",
@@ -418,7 +468,7 @@ struct retro_core_option_definition *option_defs_intl[RETRO_LANGUAGE_LAST] = {
  *   be as painless as possible for core devs)
  */
 
-static INLINE void libretro_set_core_options(retro_environment_t environ_cb)
+static void libretro_set_core_options(retro_environment_t environ_cb)
 {
    unsigned version = 0;
 

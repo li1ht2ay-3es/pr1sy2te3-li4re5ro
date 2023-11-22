@@ -44,6 +44,7 @@
 #include "Pokey.h"
 #include "BupChip.h"
 #include "Maria.h"
+#include "Ym2151.h"
 
 int mixer_rate = 48000;
 
@@ -59,7 +60,9 @@ static uint16_t mixer_volume = 100;
 static uint16_t tia_volume = 100;
 static uint16_t pokey_volume = 100;
 static uint16_t bupchip_volume = 100;
-static uint16_t ym2141_volume = 100;
+static uint16_t yamaha_volume = 100;
+static uint16_t covox_volume = 100;
+
 
 void mixer_Reset(void)
 {
@@ -95,6 +98,7 @@ void mixer_Run(int cycles)
       //tia_Output();
       pokey_Output();
       //bupchip_Output();
+      ym2151_Output();
 
       mixer_outCount++;
 
@@ -107,6 +111,11 @@ void mixer_Run(int cycles)
          mixer_cycles2 += mixer_rate;
       }
 	}
+}
+
+void mixer_SetMixerVolume(uint16_t volume)
+{
+   mixer_volume = volume;
 }
 
 void mixer_SetTiaVolume(uint16_t volume)
@@ -122,6 +131,16 @@ void mixer_SetPokeyVolume(uint16_t volume)
 void mixer_SetBupchipVolume(uint16_t volume)
 {
    bupchip_volume = volume;
+}
+
+void mixer_SetYamahaVolume(uint16_t volume)
+{
+   yamaha_volume = volume;
+}
+
+void mixer_SetCovoxVolume(uint16_t volume)
+{
+   covox_volume = volume;
 }
 
 void mixer_FrameEnd(void)
@@ -148,8 +167,15 @@ void mixer_FrameEnd(void)
 
       if (cartridge_bupchip)
 	  {
-         left += (bupchip_buffer[index*2 + 0] * bupchip_volume) / 100;  /* stereo */
-         right += (bupchip_buffer[index*2 + 1] * bupchip_volume) / 100;
+         left += (bupchip_buffer[index*2 + 0] * 2 * bupchip_volume) / 100;  /* 7f = max unscaled volume */
+         right += (bupchip_buffer[index*2 + 1] * 2 * bupchip_volume) / 100;
+	  }
+
+
+      if (cartridge_ym2151)
+	  {
+         left += (ym2151_buffer[index*2 + 0] * 2 * bupchip_volume) / 100;  /* 7f = max unscaled volume */
+         right += (ym2151_buffer[index*2 + 1] * 2 * bupchip_volume) / 100;
 	  }
 
 

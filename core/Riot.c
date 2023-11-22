@@ -194,7 +194,7 @@ void riot_SetTimer(uint16_t timer, uint8_t intervals)
    riot_active = 1;
 }
 
-INLINE uint8_t riot_Read(uint16_t address)
+uint8_t riot_Read(uint16_t address)
 {
    uint8_t oldval;
 
@@ -226,7 +226,7 @@ INLINE uint8_t riot_Read(uint16_t address)
    return memory_ReadOpenBus(address);
 }
 
-INLINE void riot_Write(uint16_t address, uint8_t data)
+void riot_Write(uint16_t address, uint8_t data)
 {
    address += 0x200;
    switch(address)

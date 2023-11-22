@@ -91,7 +91,7 @@ static const uint8_t SALLY_CYCLES[256] = {
   2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0,  /* F0 - FF */
 };
 
-static INLINE uint8_t read_mem(uint16_t address)
+static uint8_t read_mem(uint16_t address)
 {
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
@@ -108,7 +108,7 @@ static INLINE uint8_t read_mem(uint16_t address)
    }
 }
 
-static INLINE void write_mem(uint16_t address, uint8_t data)
+static void write_mem(uint16_t address, uint8_t data)
 {
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
@@ -134,7 +134,8 @@ void sally_SetRead(uint32_t start, uint32_t stop, uint8_t *prg)
    {
       sally_readmap[start++] = prg;
 
-      prg += 0x40;
+      if (prg)
+         prg += 0x40;
    }
 }
 
@@ -147,7 +148,8 @@ void sally_SetWrite(uint32_t start, uint32_t stop, uint8_t *prg)
    {
       sally_writemap[start++] = prg;
 
-      prg += 0x40;
+      if (prg)
+         prg += 0x40;
    }
 }
 

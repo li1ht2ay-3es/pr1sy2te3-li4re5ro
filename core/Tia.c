@@ -184,7 +184,7 @@ static void update_channel(int channel)
    }
 }
 
-INLINE uint8_t tia_Read(uint16_t address)
+uint8_t tia_Read(uint16_t address)
 {
    switch(address)
    {
@@ -200,7 +200,7 @@ INLINE uint8_t tia_Read(uint16_t address)
    return memory_ReadOpenBus(address);
 }
 
-INLINE void tia_Write(uint16_t address, uint8_t data)
+void tia_Write(uint16_t address, uint8_t data)
 {
    uint8_t channel = (address + 1) & 1;
 
@@ -289,7 +289,7 @@ static void tia_Tick()
    }
 }
 
-INLINE void tia_Run()
+void tia_Run()
 {
    if (out_clock)  /* past cycle 227 */
       return;
@@ -302,7 +302,7 @@ INLINE void tia_Run()
    out_clock++;
 }
 
-INLINE void tia_ScanlineEnd()
+void tia_ScanlineEnd()
 {
    tia_Tick();  /* cycle 454 */
 

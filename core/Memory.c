@@ -79,11 +79,9 @@ void memory_Map(void)
 void memory_Reset(void)
 {
    memset(memory_ram + 0x1800, 0, 0x1000);
-
-   memory_Map();
 }
 
-INLINE uint8_t memory_Read(uint16_t address)
+uint8_t memory_Read(uint16_t address)
 {
    int offset = address & 0xff;
 
@@ -123,7 +121,7 @@ INLINE uint8_t memory_Read(uint16_t address)
    return memory_ReadOpenBus(address);
 }
 
-INLINE void memory_Write(uint16_t address, uint8_t data)
+void memory_Write(uint16_t address, uint8_t data)
 {
    int offset = address & 0xff;
 
