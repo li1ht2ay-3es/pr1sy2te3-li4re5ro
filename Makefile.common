@@ -1,5 +1,6 @@
 LIBRETRO_COMM_DIR := $(CORE_DIR)/../libretro-common
 BUPBOOP_DIR := $(CORE_DIR)/../bupboop
+NUKED_DIR := $(CORE_DIR)/../nuked
 
 INCFLAGS := -I$(CORE_DIR) \
 	    -I$(LIBRETRO_COMM_DIR)/include
@@ -35,13 +36,17 @@ SOURCES_C := \
 	$(CORE_DIR)/Sally.c \
 	$(CORE_DIR)/Souper.c \
 	$(CORE_DIR)/SuperGame.c \
-	$(CORE_DIR)/Tia.c
+	$(CORE_DIR)/Tia.c \
+	$(CORE_DIR)/Ym2151.c
 
 SOURCES_C += \
 	$(BUPBOOP_DIR)/coretone/channel.c \
 	$(BUPBOOP_DIR)/coretone/coretone.c \
 	$(BUPBOOP_DIR)/coretone/music.c \
 	$(BUPBOOP_DIR)/coretone/sample.c
+
+SOURCES_C += \
+	$(NUKED_DIR)/opm.c
 
 SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
