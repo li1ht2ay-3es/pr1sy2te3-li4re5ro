@@ -258,7 +258,7 @@ static void update_input(void)
       left_difficulty ^= 1;
       left_difficulty_hold = 1;
 
-      retro_print_message(left_difficulty ? "Left switch: Left (B)" : "Left switch: Right (A)");
+      retro_print_message(left_difficulty ? "Left switch: Right (A)" : "Left switch: Left (B)");
    }
    else if (left_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)))
       left_difficulty_hold = 0;
@@ -268,7 +268,7 @@ static void update_input(void)
       right_difficulty ^= 1;
       right_difficulty_hold = 1;
 
-      retro_print_message(right_difficulty ? "Right switch: Left (B)" : "Right switch: Right (A)");
+      retro_print_message(right_difficulty ? "Right switch: Right (A)" : "Right switch: Left (B)");
    }
    else if (right_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)))
       right_difficulty_hold = 0;
