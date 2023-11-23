@@ -224,9 +224,12 @@ static void process_lightgun(int port)
    int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 
+   /* -32767, -32767 = top-left */
+   /* 0,0 = offscreen ? */
+
    printf( "%d %d", x, y);
    x = ((x + 0x7FFF) * 320) / 0xFFFF;  /* scale + clamp */
-   printf( "- %d", x);
+   printf( " - %d", x);
 
    if (x < 0)
       x = 0;
@@ -1052,6 +1055,7 @@ void retro_run(void)
    update_input();
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
+   process_lightgun();
 
    buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
    if (videoPixelBytes == 2)
