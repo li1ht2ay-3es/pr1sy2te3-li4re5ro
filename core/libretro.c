@@ -77,6 +77,12 @@ static char highscore_globalname[33];
 
 static int bios_startup = 1;
 
+static int lightgun_trigger = 0;
+static int lightgun_x = 0;
+static int lightgun_y = 0;
+
+static unsigned port_devices[2];
+
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
@@ -161,6 +167,70 @@ static void display_ResetPalette(void)
    }
 }
 
+static void draw_cursor(int16_t x, int16_t y, uint8_t color)
+{
+   int i;
+   int x_start = x - 3;  /* pixel center */
+   int x_end  = x + 3;
+   int y_start = y - 3;
+   int y_end = y + 3;
+
+   uint8_t *ptr = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * y) * Rect_GetLength(&maria_visibleArea);
+   ptr += (maria_visibleArea.left - maria_displayArea.left) + x;
+
+   if (x < 0 && y < 0)  /* off-screen */
+      return;
+
+   if (x_start < 0) x_start = 0;
+   if (x_end >= 320) x_end = 320 - 1;
+   if (y_start < 0) y_start = 0;
+   if (y_end >= 224) y_end = 224 - 1;
+
+   /* draw crosshair */
+   for (i = (x_start - x); i <= (x_end - x); i++)
+      ptr[i] = (i & 1) ? color : 0xff;
+
+   for (i = (y_start - y); i <= (y_end - y); i++)
+      ptr[i * 320] = (i & 1) ? color : 0xff;
+}
+
+static void process_lightgun(int port)
+{
+   bool btn = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) ? true : false;
+   int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+   int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+
+   x = ((x + 0x7FFF) * 320) / 0xFFFF;  /* scale + clamp */
+   if (x < 0)
+      x = 0;
+   else if (x >= 320)
+      x = 320 - 1;
+
+
+   y = ((y + 0x7FFF) * 224) / 0xFFFF;
+   if (y < 0)
+      y = 0;
+   else if (y >= 224)
+      y = 224 - 1;
+
+
+   if (btn)
+   {
+      if (lightgun_trigger == 0)  /* first fire */
+	  {
+         lightgun_x = x;
+         lightgun_y = y;
+	  }
+      lightgun_trigger = 5;
+   }
+
+   else if (lightgun_trigger > 0)  /* release delay */
+      lightgun_trigger--;
+
+   draw_cursor(x, y, 255);
+}
+
 static void update_input(void)
 {
    unsigned i,j;
@@ -169,6 +239,7 @@ static void update_input(void)
    unsigned j2_override_left  = 0;
    unsigned j2_override_down  = 0;
    unsigned j2_override_up    = 0;
+   int port;
 
     
    /*
@@ -275,6 +346,22 @@ static void update_input(void)
 
    keyboard_data[15] = left_difficulty;
    keyboard_data[16] = right_difficulty;
+
+
+#if 1
+   for (port = 0; port < 2; port++)
+   {
+      switch (port_devices[port])
+      {
+	  case RETRO_DEVICE_JOYPAD:
+         break;
+
+	  case RETRO_DEVICE_LIGHTGUN:
+         process_lightgun(port);
+         break;
+	  }
+   }
+#endif
 }
 
 /************************************
@@ -546,8 +633,27 @@ static void check_variables(bool first_run)
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
 {
-   (void)port;
-   (void)device;
+   if (port >= 2)
+      return;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         port_devices[port] = RETRO_DEVICE_JOYPAD;
+         break;
+
+      case RETRO_DEVICE_MOUSE:
+         port_devices[port] = RETRO_DEVICE_MOUSE;
+         break;
+
+      case RETRO_DEVICE_LIGHTGUN:
+         port_devices[port] = RETRO_DEVICE_LIGHTGUN;
+         break;
+
+      case RETRO_DEVICE_NONE:
+         port_devices[port] = RETRO_DEVICE_NONE;
+         break;
+   }
 }
 
 bool get_fast_savestates(void)
