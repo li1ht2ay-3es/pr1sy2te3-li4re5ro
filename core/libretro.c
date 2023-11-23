@@ -137,7 +137,6 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_info ports[] = {
       { port_1, 3 },
       { port_2, 2 },
-      {},
    };
 
    environ_cb = cb;
@@ -190,7 +189,7 @@ static void display_ResetPalette(void)
 
 static void draw_cursor(int16_t x, int16_t y, uint8_t color)
 {
-   int i;
+   int ypos, xpos;
    int x_start = x - 3;  /* pixel center */
    int x_end  = x + 3;
    int y_start = y - 3;
@@ -202,17 +201,19 @@ static void draw_cursor(int16_t x, int16_t y, uint8_t color)
    if (x < 0 && y < 0)  /* off-screen */
       return;
 
-   if (x_start < 0) x_start = 0;
-   if (x_end >= 320) x_end = 320 - 1;
-   if (y_start < 0) y_start = 0;
-   if (y_end >= 224) y_end = 224 - 1;
+   for (ypos = (y_start - y); ypos <= (y_end - y); ypos++)  /* draw crosshair */
+   {
+      if (y_start < 0) continue;
+      if (y_end >= 224) continue;
 
-   /* draw crosshair */
-   for (i = (x_start - x); i <= (x_end - x); i++)
-      ptr[i] = (i & 1) ? color : 0xff;
+      for (xpos = (x_start - x); xpos <= (x_end - x); xpos++)
+      {
+         if (x_start < 0) continue;
+         if (x_end >= 320) continue;
 
-   for (i = (y_start - y); i <= (y_end - y); i++)
-      ptr[i * 320] = (i & 1) ? color : 0xff;
+         ptr[ypos * 320 + xpos] = ((xpos | ypos) & 1) ? color : 0xff;
+      }
+   }
 }
 
 static void process_lightgun(int port)
