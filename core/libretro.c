@@ -260,7 +260,7 @@ static void process_lightgun(int port)
    }
 
    else
-      lightgun_trigger = 5;
+      lightgun_trigger = 3;
 
    printf( "\n");
    draw_cursor(x, y, 255);
@@ -1055,7 +1055,7 @@ void retro_run(void)
    update_input();
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
-   process_lightgun();
+   process_lightgun(0);
 
    buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
    if (videoPixelBytes == 2)
