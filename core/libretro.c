@@ -197,7 +197,7 @@ static void draw_cursor(int16_t x, int16_t y, uint8_t color)
    int y_start = y - 3;
    int y_end = y + 3;
 
-   uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top + y) * Rect_GetLength(&maria_visibleArea);
+   uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea);
    ptr += maria_visibleArea.left - maria_displayArea.left;
 
    if (x < 0 && y < 0)  /* off-screen */
