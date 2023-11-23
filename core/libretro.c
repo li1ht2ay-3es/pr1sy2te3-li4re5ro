@@ -181,6 +181,7 @@ static void display_ResetPalette(void)
       uint32_t r = palette_data[(index * 3) + 0] << 16;
       uint32_t g = palette_data[(index * 3) + 1] << 8;
       uint32_t b = palette_data[(index * 3) + 2];
+
       display_palette32[index] = r | g | b;
       display_palette16[index] = ((r & 0xF80000) >> 8) |
                                  ((g & 0x00F800) >> 5) |
@@ -188,7 +189,6 @@ static void display_ResetPalette(void)
    }
 }
 
-#include <stdio.h>
 static void draw_cursor(int16_t x, int16_t y, uint8_t color)
 {
    const int cursor_pad = 3;
@@ -222,12 +222,14 @@ static void process_lightgun(int port)
    int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   /* -32767, -32767 = top-left */
-   /* 0,0 = offscreen ? */
+   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
+   {
+      x = 0x7FFF;
+      y = 0x7FFF;
+   }
 
-   printf( "%d %d", x, y);
+
    x = ((x + 0x7FFF) * 320) / 0xFFFF;  /* scale + clamp */
-   printf( " - %d", x);
 
    if (x < 0)
       x = 0;
@@ -236,7 +238,6 @@ static void process_lightgun(int port)
 
 
    y = ((y + 0x7FFF) * 224) / 0xFFFF;
-   printf( " %d", y);
 
    if (y < 0)
       y = 0;
@@ -258,9 +259,8 @@ static void process_lightgun(int port)
    }
 
    else
-      lightgun_trigger = 3;
+      lightgun_trigger = 5;
 
-   printf( "\n");
    draw_cursor(x, y, 255);
 }
 
