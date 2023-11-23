@@ -191,27 +191,25 @@ static void display_ResetPalette(void)
 #include <stdio.h>
 static void draw_cursor(int16_t x, int16_t y, uint8_t color)
 {
+   const int cursor_pad = 3;
    int ypos, xpos;
-   int x_start = x - 3;  /* pixel center */
-   int x_end  = x + 3;
-   int y_start = y - 3;
-   int y_end = y + 3;
+   int x_start = x - cursor_pad;  /* pixel center */
+   int x_end  = x + cursor_pad;
+   int y_start = y - cursor_pad;
+   int y_end = y + cursor_pad;
 
    uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea);
    ptr += maria_visibleArea.left - maria_displayArea.left;
 
-   if (x < 0 && y < 0)  /* off-screen */
-      return;
-
    for (ypos = y_start; ypos <= y_end; ypos++)  /* draw crosshair */
    {
-      if (y_start < 0) continue;
-      if (y_end >= 224) continue;
+      if (ypos < 0) continue;
+      if (ypos >= 224) continue;
 
       for (xpos = x_start; xpos <= x_end; xpos++)
       {
-         if (x_start < 0) continue;
-         if (x_end >= 320) continue;
+         if (xpos < 0) continue;
+         if (xpos >= 320) continue;
 
          ptr[ypos * 320 + xpos] = ((xpos | ypos) & 1) ? color : 0xff;
       }
