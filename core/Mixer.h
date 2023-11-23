@@ -61,6 +61,8 @@ extern void mixer_SetPokeyVolume(uint16_t volume);
 extern void mixer_SetBupchipVolume(uint16_t volume);
 extern void mixer_SetCovoxVolume(uint16_t volume);
 
+extern void mixer_SetFilter(int limit);
+extern void mixer_SetFilterTia(int limit);
 
 #define MAX_SOUND_SAMPLES (3 * 2 * 192000 / 50)  /* stereo + overflow */
 

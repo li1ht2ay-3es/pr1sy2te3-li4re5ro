@@ -93,6 +93,16 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_c
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
+static char osd_message[4096];
+
+void retro_print_message(char *str)
+{
+   struct retro_message msg = { osd_message, 100 };
+
+   strcpy(osd_message, str);
+   environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+}
+
 void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
@@ -247,6 +257,8 @@ static void update_input(void)
    {
       left_difficulty ^= 1;
       left_difficulty_hold = 1;
+
+      retro_print_message(left_difficulty ? "Left switch: Left (B)" : "Left switch: Right (A)");
    }
    else if (left_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)))
       left_difficulty_hold = 0;
@@ -255,6 +267,8 @@ static void update_input(void)
    {
       right_difficulty ^= 1;
       right_difficulty_hold = 1;
+
+      retro_print_message(left_difficulty ? "Right switch: Left (B)" : "Right switch: Right (A)");
    }
    else if (right_difficulty_hold && !(joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)))
       right_difficulty_hold = 0;
@@ -322,24 +336,6 @@ static void update_timing(void)
 static void check_variables(bool first_run)
 {
    struct retro_variable var = {0};
-
-   /* Read low pass audio filter settings */
-   var.key   = "prosystem_low_pass_filter";
-   var.value = NULL;
-
-   low_pass_enabled = false;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      if (strcmp(var.value, "enabled") == 0)
-         low_pass_enabled = true;
-
-   var.key   = "prosystem_low_pass_range";
-   var.value = NULL;
-
-   low_pass_range = (60 * 0x10000) / 100;
-
-	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-		low_pass_range = (strtol(var.value, NULL, 10) * 0x10000) / 100;
 
    /* Read dual stick controller setting */
    var.key   = "prosystem_gamepad_dual_stick_hack";
@@ -432,6 +428,44 @@ static void check_variables(bool first_run)
    {
 	  if (strcmp(var.value, "disabled") == 0)
          bios_startup = 0;
+   }
+
+
+   var.key   = "prosystem_low_pass_filter";
+   var.value = NULL;
+
+   low_pass_enabled = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      if (strcmp(var.value, "enabled") == 0)
+         low_pass_enabled = true;
+
+
+   var.key   = "prosystem_low_pass_range_mixer";
+   var.value = NULL;
+
+   mixer_SetFilter(0);
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      int val = atoi(var.value);
+
+      if (low_pass_enabled)
+         mixer_SetFilter(val);
+   }
+
+
+   var.key   = "prosystem_low_pass_range";
+   var.value = NULL;
+
+   mixer_SetTiaFilter(0);
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      int val = atoi(var.value);
+
+      if (low_pass_enabled)
+         mixer_SetTiaFilter(val);
    }
 
 

@@ -56,13 +56,15 @@ static int mixer_cycles2 = 0;
 static int mixer_tick = 0;
 static int mixer_tick2 = 0;
 
-static uint16_t mixer_volume = 100;
-static uint16_t tia_volume = 100;
-static uint16_t pokey_volume = 100;
-static uint16_t bupchip_volume = 100;
-static uint16_t yamaha_volume = 100;
-static uint16_t covox_volume = 100;
+static int mixer_volume = 100;
+static int tia_volume = 100;
+static int pokey_volume = 100;
+static int bupchip_volume = 100;
+static int yamaha_volume = 100;
+static int covox_volume = 100;
 
+static int mixer_filter = 0;
+static int tia_filter = 0;
 
 void mixer_Reset(void)
 {
@@ -81,6 +83,16 @@ void mixer_SetRate()
 void mixer_Frame(void)
 {
    mixer_outCount = 0;
+}
+
+void mixer_SetFilter(int limit)
+{
+   mixer_filter = limit;
+}
+
+void mixer_SetTiaFilter(int limit)
+{
+   tia_filter = limit;
 }
 
 void mixer_Run(int cycles)
@@ -150,14 +162,27 @@ void mixer_FrameEnd(void)
 
 
    /* Single-pole low-pass filter (6 dB/octave) */
-   static int lowpass_output = 0;
-   int factor_a = (0 * 0x10000) / 100;
-   int factor_b = 0x10000 - factor_a;
+   static int tia_lowpass_mono = 0;
+   static int mixer_lowpass_left = 0;
+   static int mixer_lowpass_right = 0;
+
+   int mixer_filter_a = (mixer_filter * 0x10000) / 100;
+   int mixer_filter_b = 0x10000 - mixer_filter_a;
+
+   int tia_filter_a = (tia_filter * 0x10000) / 100;
+   int tia_filter_b = 0x10000 - tia_filter_a;
 
 
    for (index = 0; index < tia_outCount; index += 2)
    {
       left = (tia_buffer[index] * tia_volume) / 100;
+
+      if (tia_filter)
+	  {
+         left = ((tia_lowpass_mono * tia_filter_a) + (left * tia_filter_b)) >> 16;
+	     tia_lowpass_mono = left;
+	  }
+
 
       if (cartridge_pokey)
          left += (pokey_buffer[index] * pokey_volume) / 100;
@@ -179,13 +204,18 @@ void mixer_FrameEnd(void)
 	  }
 
 
-      left = (left > 0x7FFF) ? 0x7FFF : left;
+	  left = (left > 0x7FFF) ? 0x7FFF : left;
       right = (right > 0x7FFF) ? 0x7FFF : right;
 
 
-      //output = (lowpass_output * factor_a) + (output * factor_b);
-      //output >>= 16;
-      lowpass_output = left;
+      if (mixer_filter)
+	  {
+         left = ((mixer_lowpass_left * mixer_filter_a) + (left * mixer_filter_b)) >> 16;
+	     mixer_lowpass_left = left;
+
+         right = ((mixer_lowpass_right * mixer_filter_a) + (right * mixer_filter_b)) >> 16;
+	     mixer_lowpass_right = right;
+	  }
 
 
       mixer_buffer[index*2 + 0] = (int16_t) left;
