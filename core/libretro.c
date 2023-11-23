@@ -132,11 +132,12 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port_2[] = {
       { "None", RETRO_DEVICE_NONE },
       { "Joypad", RETRO_DEVICE_JOYPAD },
+      { "Lightgun", RETRO_DEVICE_LIGHTGUN },
    };
 
    static const struct retro_controller_info ports[] = {
       { port_1, 3 },
-      { port_2, 2 },
+      { port_2, 3 },
    };
 
    environ_cb = cb;
@@ -187,6 +188,7 @@ static void display_ResetPalette(void)
    }
 }
 
+#include <stdio.h>
 static void draw_cursor(int16_t x, int16_t y, uint8_t color)
 {
    int ypos, xpos;
@@ -222,8 +224,10 @@ static void process_lightgun(int port)
    int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-
+   printf( "%d %d", x, y);
    x = ((x + 0x7FFF) * 320) / 0xFFFF;  /* scale + clamp */
+   printf( "- %d", x);
+
    if (x < 0)
       x = 0;
    else if (x >= 320)
@@ -231,6 +235,8 @@ static void process_lightgun(int port)
 
 
    y = ((y + 0x7FFF) * 224) / 0xFFFF;
+   printf( " %d", y);
+
    if (y < 0)
       y = 0;
    else if (y >= 224)
@@ -239,17 +245,21 @@ static void process_lightgun(int port)
 
    if (btn)
    {
-      if (lightgun_trigger == 0)  /* first fire */
+      if ((--lightgun_trigger) == 0)  /* hold delay */
 	  {
+         printf( " - fire" );
          lightgun_x = x;
          lightgun_y = y;
 	  }
-      lightgun_trigger = 5;
+
+	  else if (lightgun_trigger < 0)
+         lightgun_trigger = -1;
    }
 
-   else if (lightgun_trigger > 0)  /* release delay */
-      lightgun_trigger--;
+   else
+      lightgun_trigger = 5;
 
+   printf( "\n");
    draw_cursor(x, y, 255);
 }
 
