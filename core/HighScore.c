@@ -46,14 +46,14 @@ static uint32_t highscore_size = 0;
 static void highscore_initram(void)
 {
    memset(memory_nvram + 0, 0, 0x29);  /* name */
-   memset(memory_nvram + 0x29, 0xff, 0x6e-0x29);  /* game id - table 1 */
-   memset(memory_nvram + 0x6e, 0xff, 0xb3-0x6e);  /* game id - table 2 */
-   memset(memory_nvram + 0xb3, 0x7f, 0xf8-0xb3);  /* difficulty */
-   memset(memory_nvram + 0xf8, 0x7f, 0x13d-0xf8);  /* index */
-   memset(memory_nvram + 0x13d, 0, 0x780-0x13d);  /* data */   
-   //memset(memory_nvram + 0x790, 0xff, 0x7a0-0x790);  /* data */   
-   memset(memory_nvram + 0x790, 0, 0x7a0-0x790);  /* data */   
-   memset(memory_nvram + 0x7a0, 0, 0x800-0x7a0);  /* data */   
+   memset(memory_nvram + 0x29, 0xff, 0x6e - 0x29);  /* game id - table 1 */
+   memset(memory_nvram + 0x6e, 0xff, 0xb3 - 0x6e);  /* game id - table 2 */
+   memset(memory_nvram + 0xb3, 0x7f, 0xf8 - 0xb3);  /* difficulty */
+   memset(memory_nvram + 0xf8, 0x7f, 0x13d - 0xf8);  /* index */
+   memset(memory_nvram + 0x13d, 0, 0x780 - 0x13d);  /* data */   
+   //memset(memory_nvram + 0x790, 0xff, 0x7a0-0x790);  /* data */  (Popeye ?)
+   memset(memory_nvram + 0x790, 0, 0x7a0 - 0x790);  /* data */   
+   memset(memory_nvram + 0x7a0, 0, 0x800 - 0x7a0);  /* data */   
 }
 
 bool highscore_Load(const char *filename)
