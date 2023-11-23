@@ -222,13 +222,6 @@ static void process_lightgun(int port)
    int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
-   {
-      x = 0x7FFF;
-      y = 0x7FFF;
-   }
-
-
    x = ((x + 0x7FFF) * 320) / 0xFFFF;  /* scale + clamp */
 
    if (x < 0)
@@ -245,11 +238,17 @@ static void process_lightgun(int port)
       y = 224 - 1;
 
 
+   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
+   {
+      x = 0x7FFF;
+      y = 0x7FFF;
+   }
+
+
    if (btn)
    {
       if ((--lightgun_trigger) == 0)  /* hold delay */
 	  {
-         printf( " - fire" );
          lightgun_x = x;
          lightgun_y = y;
 	  }
@@ -259,7 +258,13 @@ static void process_lightgun(int port)
    }
 
    else
+   {
       lightgun_trigger = 5;
+
+      lightgun_x = 0x7FFF;
+      lightgun_y = 0x7FFF;
+   }
+
 
    draw_cursor(x, y, 255);
 }
