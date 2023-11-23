@@ -250,12 +250,10 @@ void mapper_Write(uint16_t address, uint8_t data)
 
    else if (address >= 0x470 && address < 0x480)
    {
-      if (data & 0x08)  /* XM highscore */
-	  {
-         cartridge_xm_hsc = 1;
+      if (data & 0x08)
          highscore_Map();
-	  }
-      return;  /* xm */
+
+      return;
    }
 
    else if (address >= 0x800 && address < 0x1000)

@@ -88,7 +88,6 @@ extern uint8_t cartridge_pokey;
 extern uint8_t cartridge_ym2151;
 extern uint8_t cartridge_bupchip;
 extern uint8_t cartridge_xm;  /* expansion module */
-extern uint8_t cartridge_xm_hsc;
 
 extern uint8_t cartridge_bankset;  /* halt rom */
 extern uint8_t cartridge_exrom;  /* extra 16 KB rom */

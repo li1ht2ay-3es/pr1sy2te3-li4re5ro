@@ -322,9 +322,6 @@ void pokey_Write(uint16_t address, uint8_t value)
 
 static void inc_channel(int index, int cycles)
 {
-   if (pokey_audf[index] == 0 && pokey_audc[index] == 0)  /* speedhack = ignore ultrasonic */
-      return;
-
    if ((--pokey_divideCount[index]) == 0 && pokey_borrowCount[index] == 0)
       pokey_borrowCount[index] = cycles;
 }
@@ -384,7 +381,7 @@ void pokey_Run(int cycles)
 
 
    pokey_cycles += cycles;
-   if (pokey_cycles < CYCLES_PER_SCANLINE / 32)  /* 4 = fuzzy, 8 = good, 32 = high, 113 = max */
+   if (pokey_cycles < CYCLES_PER_SCANLINE / 64)  /* 4 = fuzzy, 8 = good, 32 = high, 113 = max */
       return;
 
 
@@ -393,8 +390,13 @@ void pokey_Run(int cycles)
       volonly[index] = pokey_audc[index] & POKEY_VOLUME_ONLY;
       volmask[index] = pokey_audc[index] & POKEY_VOLUME_MASK;
 
+
+      if (pokey_lpfCount[index] >= pokey_lowpass)  /* latch new value */
+         pokey_lpfOld[index] = pokey_lpfNew[index];
+
       newvol = ((pokey_output[index] ^ pokey_filter[index]) | volonly[index]) ? volmask[index] : 0;
-      pokey_lpfCount[index] = (pokey_lpfNew[index] == newvol) ? pokey_lpfCount[index] : 0;
+      pokey_lpfCount[index] = (pokey_lpfNew[index] == newvol) ? pokey_lpfCount[index] : 1;
+
 
       if (pokey_audc[index] & POKEY_PURE)
          volmode[index] = 0;
@@ -410,7 +412,6 @@ void pokey_Run(int cycles)
    while (pokey_cycles >= 4)  /* Maria 1/4 tick*/
    {
       int clock_triggered = 0;
-	  int update_volume[4] = {0};
 
       pokey_cycles -= 4;
 
@@ -487,9 +488,6 @@ void pokey_Run(int cycles)
          process_channel(2, volmode[2]);
 
          pokey_filter[0] = (pokey_audctl & POKEY_CH1_FILTER) ? pokey_output[0] : 1;
-
-		 update_volume[0] = pokey_audctl & POKEY_CH1_FILTER;
-		 update_volume[2] = 1;
 	  }
 
 
@@ -504,9 +502,6 @@ void pokey_Run(int cycles)
          pokey_filter[1] = (pokey_audctl & POKEY_CH2_FILTER) ? pokey_output[1] : 1;
 
          /* irq4 */
-
-		 update_volume[1] = pokey_audctl & POKEY_CH2_FILTER;
-		 update_volume[3] = 1;
 	  }
 
 
@@ -524,8 +519,6 @@ void pokey_Run(int cycles)
          process_channel(0, volmode[0]);
 
          /* irq1 */
-
-         update_volume[0] = 1;
 	  }
 
 
@@ -538,36 +531,28 @@ void pokey_Run(int cycles)
          process_channel(1, volmode[1]);
 
          /* irq2 */
-
-         update_volume[1] = 1;
 	  }
 
 
       for (index = 0; index < 4; index++)
 	  {
-         if (!update_volume[index])
+         newvol = 0;
+         if (volmask[index])
+            newvol = ((pokey_output[index] ^ pokey_filter[index]) | volonly[index]) ? volmask[index] : 0;
+
+
+         if (pokey_lpfNew[index] == newvol)  /* no frequency change */
             pokey_lpfCount[index]++;
 
-		 else
+         else
 		 {
-            newvol = 0;
-            if (volmask[index])
-               newvol = ((pokey_output[index] ^ pokey_filter[index]) | volonly[index]) ? volmask[index] : 0;
+            if (pokey_lpfCount[index] >= pokey_lowpass)  /* latch new value */
+               pokey_lpfOld[index] = pokey_lpfNew[index];
 
-
-            if (pokey_lpfNew[index] == newvol)  /* no frequency change */
-               pokey_lpfCount[index]++;
-
-			else
-			{
-               if (pokey_lpfCount[index] >= pokey_lowpass)  /* latch new value */
-                  pokey_lpfOld[index] = pokey_lpfNew[index];
-
-               pokey_lpfCount[index] = 1;
-               pokey_lpfNew[index] = newvol;
-			}
-		 }
-	  }
+            pokey_lpfCount[index] = 1;
+            pokey_lpfNew[index] = newvol;
+         }
+      }
    }
 
 
@@ -579,8 +564,10 @@ void pokey_Run(int cycles)
 
    for (index = 0; index < 4; index++)
    {
-      pokey_lpfOld[index] = (pokey_lpfCount[index] >= pokey_lowpass) ? pokey_lpfNew[index] : pokey_lpfOld[index];  /* latch new value */
-      pokey_lpfCount[index] &= 0xffff;
+      if (pokey_lpfCount[index] >= pokey_lowpass)  /* latch new value */
+         pokey_lpfOld[index] = pokey_lpfNew[index];
+
+      pokey_lpfCount[index] &= 0xfffff;
    }
 }
 

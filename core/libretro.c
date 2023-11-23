@@ -492,18 +492,21 @@ static void check_variables(bool first_run)
    var.key   = "prosystem_highscore_name";
    var.value = NULL;
 
-   highscore_name = 2;
+   highscore_name = 1;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
 	  if (strcmp(var.value, "None") == 0)
          highscore_name = 0;
 
-	  else if (strcmp(var.value, "Prosystem") == 0)
-         highscore_name = 1;
-
 	  else if (strcmp(var.value, "Per-Game") == 0)
-	     highscore_name = 3;
+	     highscore_name = 2;
+
+	  else if (strcmp(var.value, "HSC") == 0)
+         highscore_name = 3;
+
+	  else if (strcmp(var.value, "Prosystem") == 0)
+         highscore_name = 4;
    }
 }
 
@@ -740,7 +743,7 @@ void retro_unload_game(void)
       if (highscore_save == 1)  /* global */
          highscore_WriteNvram(biospath);
 
-	  else if (highscore_name == 2)  /* global */
+	  else if (highscore_name == 1)  /* global */
          highscore_WriteNvramName(biospath, highscore_globalname);
    }
 
@@ -856,11 +859,14 @@ void retro_run(void)
          if (highscore_name == 0)
             highscore_SetName(" ");
 
-         else if (highscore_name == 1)
-            highscore_SetName("PROSYSTEM");
-
-	     else if (highscore_name == 2)  /* use global name */
+	     else if (highscore_name == 1)
             memcpy(memory_nvram + 8, highscore_globalname, 33);
+
+         else if (highscore_name == 3)
+            highscore_SetName("HSC");
+
+         else if (highscore_name == 4)
+            highscore_SetName("PROSYSTEM");
 	  }
    }
 

@@ -96,6 +96,9 @@ static uint8_t read_mem(uint16_t address)
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
 
+   if (address >= 0x1790 && address < 0x17a0)
+	   address += 0;
+
    if (sally_readmap[bank] > 0)
       return sally_readmap[bank][offset];
 
@@ -112,6 +115,9 @@ static void write_mem(uint16_t address, uint8_t data)
 {
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
+
+   if (address >= 0x1790 && address < 0x17a0)
+	   address += 0;
 
    if (sally_writemap[bank] > 0)
       sally_writemap[bank][offset] = data;

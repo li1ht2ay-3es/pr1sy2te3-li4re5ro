@@ -101,6 +101,7 @@ struct retro_core_option_definition option_defs_us[] = {
       "TIA Audio Filter",
       "Remove higher frequency sounds.",
       {
+         { "4", "8 KHz" },
          { "3", "10 KHz" },
          { "2", "15 KHz" },
          { "1", "31 KHz (off)" },
@@ -113,6 +114,10 @@ struct retro_core_option_definition option_defs_us[] = {
       "POKEY Audio Filter",
       "Remove higher frequency sounds.",
       {
+         { "224", "8 KHz" },
+         { "199", "9 KHz" },
+         { "179", "10 KHz" },
+         { "163", "11 KHz" },
          { "150", "12 KHz" },
          { "138", "13 KHz" },
          { "128", "14 KHz" },
@@ -384,22 +389,23 @@ struct retro_core_option_definition option_defs_us[] = {
       "High Score Cart Saving (Restart core)",
       "Save scope.",
       {
-         { "Disabled", NULL},
-         { "Global", NULL},
-         { "Per-Game",  NULL},
+         { "Disabled", NULL },
+         { "Global", NULL },
+         { "Per-Game",  NULL },
          { NULL, NULL },
       },
-      "Global"
+      "Per-Game"
    },
    {
       "prosystem_highscore_name",
       "High Score Cart Name (Restart core)",
       "Personalization name.",
       {
-         { "None", NULL},
-         { "Prosystem", NULL},
-         { "Global", NULL},
-         { "Per-Game",  NULL},
+         { "None", NULL },
+         { "Global", NULL },
+         { "Per-Game",  NULL },
+         { "HSC", "Name (HSC)" },
+         { "Prosystem", "Name (Prosystem)" },
          { NULL, NULL },
       },
       "Global"

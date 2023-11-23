@@ -43,6 +43,19 @@ bool highscore_enabled = false;
 static uint8_t* highscore_bios = NULL;
 static uint32_t highscore_size = 0;
 
+static void highscore_initram(void)
+{
+   memset(memory_nvram + 0, 0, 0x29);  /* name */
+   memset(memory_nvram + 0x29, 0xff, 0x6e-0x29);  /* game id - table 1 */
+   memset(memory_nvram + 0x6e, 0xff, 0xb3-0x6e);  /* game id - table 2 */
+   memset(memory_nvram + 0xb3, 0x7f, 0xf8-0xb3);  /* difficulty */
+   memset(memory_nvram + 0xf8, 0x7f, 0x13d-0xf8);  /* index */
+   memset(memory_nvram + 0x13d, 0, 0x780-0x13d);  /* data */   
+   //memset(memory_nvram + 0x790, 0xff, 0x7a0-0x790);  /* data */   
+   memset(memory_nvram + 0x790, 0, 0x7a0-0x790);  /* data */   
+   memset(memory_nvram + 0x7a0, 0, 0x800-0x7a0);  /* data */   
+}
+
 bool highscore_Load(const char *filename)
 {
    RFILE *file;
@@ -50,6 +63,8 @@ bool highscore_Load(const char *filename)
       return false;
 
    highscore_Release();
+   highscore_initram();
+
 
    file = filestream_open(filename,
 		   RETRO_VFS_FILE_ACCESS_READ,
@@ -188,24 +203,18 @@ bool highscore_WriteNvramName(const char *filename, const char *buffer)
    return true; 
 }
 
-static void highscore_initram(void)
-{
-   uint8_t magic[5] = { 0x68, 0x83, 0xaa, 0x55, 0x9c };
-
-   if (memcmp(memory_nvram + 2, magic, 5) == 0)
-      return;
-
-   memset(memory_nvram, 0, sizeof(memory_nvram));
-
-   memcpy(memory_nvram + 2, magic, 5);
-   memset(memory_nvram + 0xb3, 0x7f, 0x8a);
-}
-
 void highscore_SetName(const char *name)
 {
    uint8_t index;
 
-   highscore_initram();
+   memory_nvram[0] = 0;
+   memory_nvram[1] = 0;
+   memory_nvram[2] = 0x68;
+   memory_nvram[3] = 0x83;
+   memory_nvram[4] = 0xaa;
+   memory_nvram[5] = 0x55;
+   memory_nvram[6] = 0x9c;
+   memory_nvram[7] = 0x00;
 
    for (index = 0; index < strlen(name); index++)
    {
@@ -254,19 +263,10 @@ void highscore_Map(void)
       maria_SetRead(0x1000, 0x1800, memory_nvram);
       sally_SetWrite(0x1000, 0x1800, memory_nvram);
 
-      //if (!cartridge_xm_hsc && highscore_bios)
       if (highscore_bios)
 	  {
          sally_SetRead(0x3000, 0x4000, highscore_bios);
          maria_SetRead(0x3000, 0x4000, highscore_bios);
-	  }
-	  else if(sally_readmap[0x3000 / 0x40])
-	  {
-         if (memcmp(sally_readmap[0x3000 / 0x40], highscore_bios, 0x20) == 0)  /* unmap bios for xm */
-		 {
-            //sally_SetRead(0x3000, 0x4000, 0);
-            //maria_SetRead(0x3000, 0x4000, 0);
-		 }
 	  }
    }
 }
