@@ -197,18 +197,18 @@ static void draw_cursor(int16_t x, int16_t y, uint8_t color)
    int y_start = y - 3;
    int y_end = y + 3;
 
-   uint8_t *ptr = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * y) * Rect_GetLength(&maria_visibleArea);
-   ptr += (maria_visibleArea.left - maria_displayArea.left) + x;
+   uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top + y) * Rect_GetLength(&maria_visibleArea);
+   ptr += maria_visibleArea.left - maria_displayArea.left;
 
    if (x < 0 && y < 0)  /* off-screen */
       return;
 
-   for (ypos = (y_start - y); ypos <= (y_end - y); ypos++)  /* draw crosshair */
+   for (ypos = y_start; ypos <= y_end; ypos++)  /* draw crosshair */
    {
       if (y_start < 0) continue;
       if (y_end >= 224) continue;
 
-      for (xpos = (x_start - x); xpos <= (x_end - x); xpos++)
+      for (xpos = x_start; xpos <= x_end; xpos++)
       {
          if (x_start < 0) continue;
          if (x_end >= 320) continue;
@@ -1055,7 +1055,8 @@ void retro_run(void)
    update_input();
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
-   process_lightgun(0);
+   if (port_devices[0] == RETRO_DEVICE_LIGHTGUN)
+      process_lightgun(0);
 
    buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
    if (videoPixelBytes == 2)

@@ -35,7 +35,7 @@
 #define MARIA_CYCLE_LIMIT 430
 
 rect maria_displayArea = {0, 16, 319, 257};
-rect maria_visibleArea = {0, 26, 319, 249};
+rect maria_visibleArea = {0, 27, 319, 250};
 
 uint8_t maria_surface[MARIA_SURFACE_SIZE] = {0};
 uint32_t maria_scanline = 0;
@@ -388,11 +388,6 @@ static void maria_StoreLineRAM(void)
          }
       }
    }
-
-
-/*
-TODO: Add overflow cycles to next scanline = delay
-*/
 
 
    if (!maria_offset--)  /* zone finished */
