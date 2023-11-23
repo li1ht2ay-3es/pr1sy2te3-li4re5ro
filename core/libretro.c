@@ -112,6 +112,7 @@ void retro_print_message(char *str)
 void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
+
    static const struct retro_system_content_info_override content_overrides[] = {
       {
          "a78|bin|cdf", /* extensions */
@@ -119,6 +120,24 @@ void retro_set_environment(retro_environment_t cb)
          true           /* persistent_data */
       },
       { NULL, false, false }
+   };
+
+
+   static const struct retro_controller_description port_1[] = {
+      { "None", RETRO_DEVICE_NONE },
+      { "Joypad", RETRO_DEVICE_JOYPAD },
+      { "Lightgun", RETRO_DEVICE_LIGHTGUN },
+   };
+
+   static const struct retro_controller_description port_2[] = {
+      { "None", RETRO_DEVICE_NONE },
+      { "Joypad", RETRO_DEVICE_JOYPAD },
+   };
+
+   static const struct retro_controller_info ports[] = {
+      { port_1, 3 },
+      { port_2, 2 },
+      {},
    };
 
    environ_cb = cb;
@@ -131,6 +150,8 @@ void retro_set_environment(retro_environment_t cb)
    vfs_iface_info.iface                      = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
       filestream_vfs_init(&vfs_iface_info);
+
+   environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 
 #define BLIT_VIDEO_BUFFER(typename_t, src, palette, width, height, pitch, dst) \
