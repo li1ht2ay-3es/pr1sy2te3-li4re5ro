@@ -55,6 +55,7 @@ void lightgun_Trigger(int16_t x, int16_t y)
 
    lightgun_scanline_cycle = 28 + (CYCLES_PER_SCANLINE - 28) * x / 320;
 
+   if (x < 0x1000 && y < 0x1000)
 	printf("%d %d %d\n", x, y, lightgun_scanline_cycle);
 }
 
