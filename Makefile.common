@@ -23,6 +23,7 @@ SOURCES_C := \
 	$(CORE_DIR)/Database.c \
 	$(CORE_DIR)/Hash.c \
 	$(CORE_DIR)/HighScore.c \
+	$(CORE_DIR)/LightGun.c \
 	$(CORE_DIR)/Linear.c \
 	$(CORE_DIR)/Mapper.c \
         $(CORE_DIR)/Maria.c \
