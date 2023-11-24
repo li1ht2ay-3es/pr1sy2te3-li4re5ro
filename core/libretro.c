@@ -81,6 +81,7 @@ static int bios_startup = 1;
 static int lightgun_trigger = 0;
 static int lightgun_x = 0;
 static int lightgun_y = 0;
+static int lightgun_detect = 0;
 
 static unsigned port_devices[2];
 
@@ -249,15 +250,21 @@ static void process_lightgun(int port)
 
    if (btn)
    {
-	  if (lightgun_trigger <= 0)  /* trigger release */
-         lightgun_trigger = -1;
-
-      else if ((--lightgun_trigger) <= 4)  /* hold time */
+      if (++lightgun_trigger >= 4)  /* wait for minimum hold time */
+	  {
          lightgun_Trigger(x, y);
+         lightgun_trigger = 1;
+      }
+   }
+
+   else if (lightgun_trigger >= 4 && lightgun_trigger <= 8)  /* hold fire */
+   {
+      lightgun_Trigger(lightgun_x, lightgun_y);
+      lightgun_trigger++;
    }
 
    else
-      lightgun_trigger = 8;  /* hold time */
+      lightgun_trigger = 0;
 
 
    lightgun_x = x;
@@ -388,9 +395,11 @@ static void update_input(void)
       switch (port_devices[port])
       {
 	  case RETRO_DEVICE_LIGHTGUN:
-         lightgun_enabled = 1;
          process_lightgun(port);
-         break;
+
+         lightgun_enabled = 1;
+         keyboard_data[3] = (lightgun_trigger) ? 0 : 1;  /* invert */
+		 break;
 	  }
    }
 }
@@ -874,14 +883,9 @@ bool retro_load_game(const struct retro_game_info *info)
       memcpy(highscore_globalname, memory_nvram + 8, 33);
    }
 
-   prosystem_Reset();
+   retro_reset();
 
    display_ResetPalette();
-
-   if (!bios_startup)
-      tia_Write(INPTCTRL, 22);
-
-   first_frame = true;
    return true;
 }
 
@@ -1012,6 +1016,9 @@ void retro_reset(void)
 
    if (!bios_startup)
       tia_Write(INPTCTRL, 22);
+
+   first_frame = true;
+   lightgun_detect = true;
 }
 
 void retro_run(void)
