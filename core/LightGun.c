@@ -61,9 +61,6 @@ void lightgun_Run(void)
    if (!lightgun_enabled)
       return;
 
-   if ((memory_ram[CTRL] & 0x60) == 0x40)  /* avoid dma mode */
-      return;
-
 
    memory_ram[INPT4] |= 0x80;  /* no light */
 
@@ -75,6 +72,10 @@ void lightgun_Run(void)
 
    if (prosystem_cycles < lightgun_scanline_cycle)
       return;
+
+   if ((memory_ram[CTRL] & 0x60) == 0x40)  /* avoid dma mode */
+      return;
+
 
    memory_ram[INPT4] &= 0x7F;
 }
