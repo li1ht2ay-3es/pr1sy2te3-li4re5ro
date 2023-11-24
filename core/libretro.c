@@ -218,7 +218,7 @@ static void draw_lightgun_cursor(int16_t x, int16_t y, uint8_t color)
 
 static void process_lightgun(int port)
 {
-   bool btn = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) ? true : false;
+   int btn = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) ? 1 : 0;
    int x = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    int y = input_state_cb(port, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 
@@ -249,15 +249,15 @@ static void process_lightgun(int port)
 
    if (btn)
    {
-	  if (lightgun_trigger < 0)  /* trigger done */
+	  if (lightgun_trigger <= 0)  /* trigger release */
          lightgun_trigger = -1;
 
-      else if ((--lightgun_trigger) <= 5)  /* hold delay */
+      else if ((--lightgun_trigger) <= 4)  /* hold time */
          lightgun_Trigger(x, y);
    }
 
    else
-      lightgun_trigger = 10;  /* reset hold */
+      lightgun_trigger = 8;  /* hold time */
 
 
    lightgun_x = x;

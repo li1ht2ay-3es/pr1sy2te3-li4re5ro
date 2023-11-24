@@ -26,7 +26,7 @@
 #ifndef LIGHTGUN_H
 #define LIGHTGUN_H
 
-#define LIGHTGUN_PAD 3
+#define LIGHTGUN_PAD 1
 
 extern void lightgun_Reset(void);
 extern void lightgun_Run(void);

@@ -75,6 +75,7 @@ void lightgun_Run(void)
    if (prosystem_cycles < lightgun_scanline_cycle)
       return;
 
-	printf("fire\n");
+	if (maria_scanline == lightgun_scanline_start)
+		printf("fire\n");
    memory_ram[INPT4] &= 0x7F;
 }
