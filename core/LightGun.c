@@ -32,12 +32,12 @@ int lightgun_enabled;
 
 static int lightgun_x;
 static int lightgun_y;
+static int lightgun_fire;
 
 static int lightgun_scanline_start;
 static int lightgun_scanline_end;
 static int lightgun_scanline_cycle;
 
-#include <stdio.h>
 void lightgun_Reset(void)
 {
    lightgun_scanline_start = 0x7FFF;
@@ -54,9 +54,6 @@ void lightgun_Trigger(int16_t x, int16_t y)
       x = 0;
 
    lightgun_scanline_cycle = 28 + (CYCLES_PER_SCANLINE - 28) * x / 320;
-
-   if (x < 0x1000 && y < 0x1000)
-	printf("%d %d %d\n", x, y, lightgun_scanline_cycle);
 }
 
 void lightgun_Run(void)
@@ -64,7 +61,11 @@ void lightgun_Run(void)
    if (!lightgun_enabled)
       return;
 
-   memory_ram[INPT4] |= 0x80;
+   if ((memory_ram[CTRL] & 0x60) == 0x40)  /* avoid dma mode */
+      return;
+
+
+   memory_ram[INPT4] |= 0x80;  /* no light */
 
    if (maria_scanline < lightgun_scanline_start)
       return;
@@ -75,7 +76,5 @@ void lightgun_Run(void)
    if (prosystem_cycles < lightgun_scanline_cycle)
       return;
 
-	if (maria_scanline == lightgun_scanline_start)
-		printf("fire\n");
    memory_ram[INPT4] &= 0x7F;
 }
