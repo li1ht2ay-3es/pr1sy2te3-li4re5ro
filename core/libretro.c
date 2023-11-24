@@ -29,6 +29,7 @@
 #include "Bios.h"
 #include "Region.h"
 #include "HighScore.h"
+#include "LightGun.h"
 
 #ifdef _3DS
 extern void* linearMemAlign(size_t size, size_t alignment);
@@ -189,14 +190,13 @@ static void display_ResetPalette(void)
    }
 }
 
-static void draw_cursor(int16_t x, int16_t y, uint8_t color)
+static void draw_lightgun_cursor(int16_t x, int16_t y, uint8_t color)
 {
-   const int cursor_pad = 3;
    int ypos, xpos;
-   int x_start = x - cursor_pad;  /* pixel center */
-   int x_end  = x + cursor_pad;
-   int y_start = y - cursor_pad;
-   int y_end = y + cursor_pad;
+   int x_start = x - LIGHTGUN_PAD;  /* pixel center */
+   int x_end  = x + LIGHTGUN_PAD;
+   int y_start = y - LIGHTGUN_PAD;
+   int y_end = y + LIGHTGUN_PAD;
 
    uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea);
    ptr += maria_visibleArea.left - maria_displayArea.left;
@@ -245,28 +245,23 @@ static void process_lightgun(int port)
    }
 
 
+   lightgun_Trigger(0x7FFF, 0x7FFF);  /* offscreen default */
+
    if (btn)
    {
-      if ((--lightgun_trigger) == 0)  /* hold delay */
-	  {
-         lightgun_x = x;
-         lightgun_y = y;
-	  }
-
-	  else if (lightgun_trigger < 0)
+	  if (lightgun_trigger < 0)  /* trigger done */
          lightgun_trigger = -1;
+
+      else if ((--lightgun_trigger) <= 5)  /* hold delay */
+         lightgun_Trigger(x, y);
    }
 
    else
-   {
-      lightgun_trigger = 5;
-
-      lightgun_x = 0x7FFF;
-      lightgun_y = 0x7FFF;
-   }
+      lightgun_trigger = 10;  /* reset hold */
 
 
-   draw_cursor(x, y, 255);
+   lightgun_x = x;
+   lightgun_y = y;
 }
 
 static void update_input(void)
@@ -386,20 +381,18 @@ static void update_input(void)
    keyboard_data[16] = right_difficulty;
 
 
-#if 1
+   lightgun_enabled = 0;
+
    for (port = 0; port < 2; port++)
    {
       switch (port_devices[port])
       {
-	  case RETRO_DEVICE_JOYPAD:
-         break;
-
 	  case RETRO_DEVICE_LIGHTGUN:
+         lightgun_enabled = 1;
          process_lightgun(port);
          break;
 	  }
    }
-#endif
 }
 
 /************************************
@@ -1058,8 +1051,9 @@ void retro_run(void)
    update_input();
 
    prosystem_ExecuteFrame(keyboard_data); /* wants input */
-   if (port_devices[0] == RETRO_DEVICE_LIGHTGUN)
-      process_lightgun(0);
+
+   if (port_devices[0] == RETRO_DEVICE_LIGHTGUN || port_devices[1] == RETRO_DEVICE_LIGHTGUN)
+      draw_lightgun_cursor(lightgun_x, lightgun_y, 255);
 
    buffer = maria_surface + ((maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea));
    if (videoPixelBytes == 2)

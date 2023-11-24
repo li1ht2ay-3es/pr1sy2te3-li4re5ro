@@ -50,6 +50,7 @@
 #include "Pokey.h"
 #include "BupChip.h"
 #include "Ym2151.h"
+#include "LightGun.h"
 
 #define PRO_SYSTEM_STATE_HEADER "PRO-SYSTEM STATE"
 
@@ -80,6 +81,7 @@ void prosystem_Reset()
    maria_Reset();
    memory_Reset();
    riot_Reset();
+   lightgun_Reset();
 
    mixer_Reset();
    tia_Reset();
@@ -101,22 +103,6 @@ void prosystem_SetRate(int rate)
    mixer_SetRate();
    tia_SetRate();
    bupchip_SetRate();
-}
-
-static void prosystem_FireLightGun()
-{
-/*
-   if(((maria_scanline >= lightgun_scanline) && 
-       (maria_scanline <= (lightgun_scanline + 3))) && 
-       (prosystem_cycles >= ((int)lightgun_cycle ) - 1))
-   {
-      memory_ram[INPT4] &= 0x7f;                        
-   } 
-   else 
-   {
-      memory_ram[INPT4] |= 0x80;                        
-   }
-*/
 }
 
 void prosystem_Run(int cycles)
@@ -188,6 +174,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
          cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
 
 		 prosystem_Run(cycles);
+		 lightgun_Run();
       }
 
 
@@ -205,6 +192,56 @@ void prosystem_ExecuteFrame(const uint8_t* input)
 
 
    mixer_FrameEnd();
+
+
+#if 0
+{
+   int ypos, xpos;
+   static int x = 120;
+   static int y = 0;
+   int color = 128;
+   int x_start = x - 3;
+   int x_end  = x + 3;
+   int y_start = y - 3;
+   int y_end = y + 3;
+   static int test = 0;
+
+   uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea);
+   ptr += maria_visibleArea.left - maria_displayArea.left;
+
+   if (x < 0 && y < 0)  /* off-screen */
+      return;
+
+   for (ypos = y_start; ypos <= y_end; ypos++)  /* bounding box */
+   {
+      if (ypos < 0) continue;
+      if (ypos >= 224) continue;
+
+      for (xpos = x_start; xpos <= x_end; xpos++)
+      {
+         if (xpos < 0) continue;
+         if (xpos > 320) continue;
+
+         ptr[ypos * 320 + xpos] = 0xff; //((xpos | ypos) & 1) ? color : 0xff;
+      }
+   }
+   //memset(maria_surface, 0xff, 320 * 120);
+
+   if (++test >= 1)
+   {
+   test = 0;
+
+#if 0
+   x++;
+   x %= 320;
+#elif 1
+   y++;
+   y %= 224+4;
+   if (y < 220) y = 220;
+#endif
+   }
+}
+#endif
 }
 
 void prosystem_Close(bool persistent_data)
