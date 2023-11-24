@@ -85,7 +85,6 @@ void riot_Reset(void)
  */
 void riot_SetInput(const uint8_t* input)
 {
-
    /*gdement: 	Comments are messy, but wanted to document how this all works.
      Changed this routine to support 1 vs 2 button modes.
      Also added the interaction of CTLSWA and DRA on the SWCHA output, and same for SWCHB.
@@ -154,9 +153,9 @@ also see 7800 schematic and RIOT datasheet  */
       memory_ram[INPT4] = (input[0x04] || input[0x05]) ? (memory_ram[INPT4] & 0x7f) : (memory_ram[INPT4] | 0x80);   /* in this mode, either button triggers only the legacy button signal */
    }
 
-   else /* first player in 2 button mode */
+   else  /* first player in 2 button mode */
    {
-      memory_ram[INPT4] |= 0x80; /* 2600 button is always off in this mode */
+      memory_ram[INPT4] |= 0x80;  /* 2600 button is always off in this mode */
 
       memory_ram[INPT1] = input[0x04] ? (memory_ram[INPT1] | 0x80) : (memory_ram[INPT1] & 0x7f);  /* left button (button 1) */
       memory_ram[INPT0] = input[0x05] ? (memory_ram[INPT0] | 0x80) : (memory_ram[INPT0] & 0x7f);  /* right button (button 2) */

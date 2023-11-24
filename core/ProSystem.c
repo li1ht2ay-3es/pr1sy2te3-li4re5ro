@@ -112,11 +112,12 @@ void prosystem_Run(int cycles)
    riot_Run(cycles);
    tia_Run();
 
-   cartridge_Run(cycles);
-
 
    prosystem_cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
+
    mixer_Run(cycles + sally_SlowCycles());
+   cartridge_Run(cycles);
+   lightgun_Run();
 }
 
 void prosystem_ExecuteFrame(const uint8_t* input)
@@ -174,7 +175,6 @@ void prosystem_ExecuteFrame(const uint8_t* input)
          cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
 
 		 prosystem_Run(cycles);
-		 lightgun_Run();
       }
 
 
