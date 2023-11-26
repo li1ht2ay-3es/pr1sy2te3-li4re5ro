@@ -103,8 +103,8 @@ void lightgun_Reset(void)
 
 void lightgun_Trigger(int16_t x, int16_t y)
 {
-   lightgun_y = y - 18;
-   lightgun_x = x;
+   lightgun_y = y - 18 + maria_visibleArea.top;
+   lightgun_x = x + maria_visibleArea.left;
 }
 
 uint8_t lightgun_Strobe(void)
