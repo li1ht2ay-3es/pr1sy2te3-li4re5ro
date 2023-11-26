@@ -247,12 +247,12 @@ static void process_lightgun(int port)
 
 
    lightgun_Trigger(0x7FFF, 0x7FFF);  /* offscreen default */
+   lightgun_Trigger(x, y);
 
    if (btn)
    {
       if (++lightgun_trigger >= 4)  /* wait for minimum hold time */
 	  {
-         lightgun_Trigger(x, y);
          lightgun_trigger = 1;
       }
    }
