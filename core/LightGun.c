@@ -101,10 +101,13 @@ void lightgun_Reset(void)
    lightgun_y = 0x7FFF;
 }
 
+#include <stdio.h>
 void lightgun_Trigger(int16_t x, int16_t y)
 {
    lightgun_y = y - 18 + maria_visibleArea.top;
    lightgun_x = x + maria_visibleArea.left;
+
+   printf("%d %d -- %d %d\n", x, y, lightgun_x, lightgun_y);
 }
 
 uint8_t lightgun_Strobe(void)
@@ -135,6 +138,7 @@ uint8_t lightgun_Strobe(void)
 		   //return data;
    }
 
+   printf("strobe\n");
    return data & 0x7f;
 }
 
