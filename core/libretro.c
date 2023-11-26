@@ -246,7 +246,6 @@ static void process_lightgun(int port)
    }
 
 
-   lightgun_Trigger(0x7FFF, 0x7FFF);  /* offscreen default */
    lightgun_Trigger(x, y);
 
    if (btn)

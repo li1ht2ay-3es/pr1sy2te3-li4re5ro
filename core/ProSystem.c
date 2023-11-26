@@ -117,7 +117,6 @@ void prosystem_Run(int cycles)
    cycles += sally_SlowCycles();
 
    mixer_Run(cycles);
-   lightgun_Run();
 }
 
 void prosystem_ExecuteFrame(const uint8_t* input)
@@ -135,7 +134,9 @@ void prosystem_ExecuteFrame(const uint8_t* input)
    maria_scanline = maria_displayArea.bottom + 1;  /* vblank start */
    scanline_start = maria_scanline;
 
-   riot_SetInput(input);
+
+   if (!lightgun_enabled)
+      riot_SetInput(input);
 
 
    while (1)
@@ -148,7 +149,10 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          maria_Scanline();
          pokey_Scanline();
-      }
+
+         if (lightgun_enabled && maria_scanline == 0)
+            riot_SetInput(input);
+	  }
 
 
       /* 0-27 = pre-dma */

@@ -69,7 +69,7 @@ xpos [160] = meltdown + barnyard / crossbow + sentinel
 4 = 262 / 272
 
 
-ypos = meltdown + barnyard / crossbow / sentinel
+ypos = meltdown + barnyard / crossbow + brigade / sentinel
  0 = x [18]
 22 = x
 24 = x
@@ -114,16 +114,17 @@ uint8_t lightgun_Strobe(void)
 {
    uint8_t data = memory_ram[INPT4] | 0x80;  /* not lit */
 
-#if 0
+
    if (!lightgun_enabled)
-      return data;
-#endif
+      return memory_ram[INPT4];
+
 
    if (maria_draw)
       return data;
 
-   //lightgun_y = 45 + maria_visibleArea.top;
-   //lightgun_x = 4 + maria_visibleArea.left;
+
+   //lightgun_y = 54 + maria_visibleArea.top;
+   //lightgun_x = 0 + maria_visibleArea.left;
 
 
    if (maria_scanline < lightgun_y)
@@ -132,16 +133,5 @@ uint8_t lightgun_Strobe(void)
    if (prosystem_cycles < lightgun_x)
       return data;
 
-   {
-	   extern int lightgun_fire1;
-	   //if (lightgun_fire1 == 0)
-		   //return data;
-   }
-
-   printf("strobe\n");
    return data & 0x7f;
-}
-
-void lightgun_Run(void)
-{
 }
