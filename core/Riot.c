@@ -28,6 +28,7 @@
 #include "Riot.h"
 #include "Equates.h"
 #include "Memory.h"
+#include "LightGun.h"
 
 static uint8_t riot_dra;
 static uint8_t riot_drb;
@@ -91,7 +92,7 @@ void riot_SetInput(const uint8_t* input)
      SWCHA is directionals.  SWCHB is console switches and button mode.
      button signals are in high bits of INPT0-5.*/
 
-   riot_dra = ((~memory_ram[CTLSWA]) | memory_ram[SWCHA]);	/*SWCHA as driven by RIOT*/
+   riot_dra = ((~memory_ram[CTLSWA]) | memory_ram[SWCHA]);	/* SWCHA as driven by RIOT */
 
 
    /*now console switches will force bits to ground:*/

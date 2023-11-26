@@ -31,6 +31,7 @@
 extern void lightgun_Reset(void);
 extern void lightgun_Run(void);
 extern void lightgun_Trigger(int16_t x, int16_t y);
+extern uint8_t lightgun_Strobe(void);
 
 extern int lightgun_enabled;
 

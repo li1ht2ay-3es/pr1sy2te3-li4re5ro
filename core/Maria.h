@@ -54,6 +54,7 @@ extern rect maria_displayArea;
 extern rect maria_visibleArea;
 extern uint8_t maria_surface[MARIA_SURFACE_SIZE];
 extern uint32_t maria_scanline;
+extern int maria_draw;
 
 extern uint8_t *maria_readmap[0x400];
 

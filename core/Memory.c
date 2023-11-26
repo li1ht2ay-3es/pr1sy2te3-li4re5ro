@@ -45,7 +45,7 @@ uint32_t memory_nvram_size = 0;
 
 uint8_t memory_ReadOpenBus(uint16_t address)
 {
-   return address >> 8;
+   return address & 0xff;
 }
 
 void memory_WriteOpenBus(uint16_t address, uint8_t data)

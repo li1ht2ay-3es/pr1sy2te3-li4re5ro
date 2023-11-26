@@ -67,7 +67,7 @@ static void prosystem_Map()
    if (bios_enabled)
       bios_Map();
 
-   memory_Map();  /* high priority = overwrite anything above */
+   memory_Map();  /* high priority = overwrite everything */
 }
 
 void prosystem_Reset()
@@ -88,7 +88,6 @@ void prosystem_Reset()
    pokey_Reset();
    bupchip_Reset();
    ym2151_Reset();
-   /* cartridge_LoadHighScoreCart(); */
 
    cartridge_Reset();
    prosystem_Map();
@@ -111,18 +110,20 @@ void prosystem_Run(int cycles)
 
    riot_Run(cycles);
    tia_Run();
+   cartridge_Run(cycles);
 
 
    prosystem_cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
+   cycles += sally_SlowCycles();
 
-   mixer_Run(cycles + sally_SlowCycles());
-   cartridge_Run(cycles);
+   mixer_Run(cycles);
    lightgun_Run();
 }
 
 void prosystem_ExecuteFrame(const uint8_t* input)
 {
    int cycles_total = 0;
+   int scanline_start;
 
    mixer_Frame();
    tia_Frame();
@@ -130,7 +131,10 @@ void prosystem_ExecuteFrame(const uint8_t* input)
    bupchip_Frame();
    ym2151_Frame();
 
+
    maria_scanline = maria_displayArea.bottom + 1;  /* vblank start */
+   scanline_start = maria_scanline;
+
    riot_SetInput(input);
 
 
@@ -172,7 +176,6 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          cycles = sally_Run();
          cycles += (!cycles) ? CYCLES_PER_SCANLINE - prosystem_cycles : 0;  /* wsync */
-         cycles += sally_SlowCycles();  /* TIA + RIOT slow access */
 
 		 prosystem_Run(cycles);
       }
@@ -186,7 +189,7 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       prosystem_cycles -= CYCLES_PER_SCANLINE;  /* overflow */
 
       maria_scanline = (maria_scanline + 1) % prosystem_scanlines;
-      if (maria_scanline == maria_displayArea.bottom + 1)
+      if (maria_scanline == scanline_start)
          break;
    }
 

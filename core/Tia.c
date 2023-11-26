@@ -46,6 +46,7 @@
 #include "Bios.h"
 #include "Cartridge.h"
 #include "Memory.h"
+#include "LightGun.h"
 
 #define TIA_POLY4_SIZE 15
 #define TIA_POLY5_SIZE 31
@@ -192,9 +193,14 @@ uint8_t tia_Read(uint16_t address)
    case INPT1:
    case INPT2:
    case INPT3:
-   case INPT4:
    case INPT5:
       return memory_ram[address];
+
+   case INPT4:
+      //if (lightgun_enabled)
+         return lightgun_Strobe();
+
+      return memory_ram[INPT4];
    }
 
    return memory_ReadOpenBus(address);

@@ -39,6 +39,7 @@ rect maria_visibleArea = {0, 27, 319, 250};
 
 uint8_t maria_surface[MARIA_SURFACE_SIZE] = {0};
 uint32_t maria_scanline = 0;
+int maria_draw;
 
 static uint8_t maria_lineRAM[MARIA_LINERAM_SIZE];
 static int maria_cycles;
@@ -80,13 +81,17 @@ uint8_t maria_Read(uint16_t address)
       return memory_ram[MSTAT];
    }
 
-   return 0xff;
+   return memory_ReadOpenBus(address);
 }
 
 void maria_Write(uint16_t address, uint8_t data)
 {
    switch (address)
    {
+   case CTRL:
+      memory_ram[address] = data;
+      break;
+
    case MSTAT:
       break;
 
@@ -186,7 +191,7 @@ static void maria_StoreGraphic(uint8_t data, bool is_holey)
       maria_horizontal += maria_wmode ? 2 : 4;
 }
 
-static void maria_WriteLineRAM(uint8_t* buffer)
+static void maria_DrawLineRAM(uint8_t* buffer)
 {
    uint8_t rmode = maria_ctrl & 3;  /* screen mode */
    uint8_t colormask = (maria_ctrl & 0x80) ? 0x0F : 0xFF;  /* colorkill */
@@ -263,6 +268,10 @@ static void maria_LoadDisplayList(void)
 {
    uint8_t mode;
 
+   if (!maria_dma)
+      return;
+
+		  
    if (maria_dpp.w == 0)  /* list start */
    {
       maria_dpp.b.h = memory_ram[DPPH];
@@ -288,7 +297,7 @@ static void maria_LoadDisplayList(void)
    }
 }
 
-static void maria_StoreLineRAM(void)
+static void maria_WriteLineRAM(void)
 {
    uint32_t index;
    uint8_t cwidth = maria_ctrl & 0x10;
@@ -298,7 +307,7 @@ static void maria_StoreLineRAM(void)
 
    memset(maria_lineRAM, 0, sizeof(maria_lineRAM));
 
-   if (!maria_dma)
+   if (!maria_dma || !maria_dpp.w)
       return;
 
 
@@ -406,19 +415,20 @@ static int maria_RenderScanline(void)
    maria_cycles = 0;
 
 
-   if (maria_scanline >= maria_visibleArea.top && maria_scanline <= maria_visibleArea.bottom)  /* draw to screen */
-      maria_WriteLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
-
-
-   if (maria_scanline > maria_displayArea.top && maria_scanline <= maria_displayArea.bottom)
-      maria_StoreLineRAM();
-
-   else if (maria_scanline == maria_displayArea.top)  /* prepare dma */
+   if (maria_scanline == maria_displayArea.top)
    {
       maria_dpp.w = 0;
+      maria_draw = maria_dma;
 
       maria_LoadDisplayList();
-   } 
+   }
+
+
+   if (maria_scanline >= maria_visibleArea.top && maria_scanline <= maria_visibleArea.bottom)  /* draw to screen */
+      maria_DrawLineRAM(maria_surface + ((maria_scanline - maria_displayArea.top) * Rect_GetLength(&maria_displayArea)));
+
+   if (maria_scanline > maria_displayArea.top && maria_scanline <= maria_displayArea.bottom)
+      maria_WriteLineRAM();
 
    return (maria_cycles > MARIA_CYCLE_LIMIT) ? MARIA_CYCLE_LIMIT : maria_cycles;
 }

@@ -398,7 +398,7 @@ static void update_input(void)
          process_lightgun(port);
 
          lightgun_enabled = 1;
-         keyboard_data[3] = (lightgun_trigger) ? 0 : 1;  /* invert */
+         keyboard_data[3] = lightgun_trigger ? 0 : 1;  /* inverted */
 		 break;
 	  }
    }

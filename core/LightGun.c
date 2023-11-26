@@ -34,48 +34,110 @@ static int lightgun_x;
 static int lightgun_y;
 static int lightgun_fire;
 
-static int lightgun_scanline_start;
-static int lightgun_scanline_end;
-static int lightgun_scanline_cycle;
+/*
+xpos [160] = meltdown + barnyard / crossbow + sentinel
+300 = 100
+310 = 114
+400 = 206
+426 = 234
+
+427 = 236
+428 = 236
+429 = 236
+430 = 236
+
+431 = 238
+432 = 238
+433 = 238
+434 = 238
+
+435 = 240
+436 = 240
+437 = 240
+438 = 240
+
+439 = x
+440 = x
+450 = x
+452 = x
+
+0 = 242
+1 = 242
+2 = 242
+
+3 = 262
+4 = 262 / 272
+
+
+ypos = meltdown + barnyard / crossbow / sentinel
+ 0 = x [18]
+22 = x
+24 = x
+26 = x
+28 = x
+30 = x
+31 = x [49]
+32 = 50
+33 = 51
+34 = 52
+35 = 53
+36 = 54
+37 = 55
+38 = 56
+39 = 57
+40 = 58
+41 = 59
+42 = 60
+43 = 61
+44 = 62
+45 = 63 / 59 / 46
+52 = 70 / 66 / 53
+62 = 80
+72 = 90
+*/
 
 void lightgun_Reset(void)
 {
-   lightgun_scanline_start = 0x7FFF;
-   lightgun_scanline_end = 0x7FFF;
+   lightgun_y = 0x7FFF;
 }
 
 void lightgun_Trigger(int16_t x, int16_t y)
 {
-   lightgun_scanline_start = y - LIGHTGUN_PAD;
-   lightgun_scanline_end = y + LIGHTGUN_PAD;
+   lightgun_y = y - 18;
+   lightgun_x = x;
+}
 
-   x -= LIGHTGUN_PAD;
-   if (x < 0)
-      x = 0;
+uint8_t lightgun_Strobe(void)
+{
+   uint8_t data = memory_ram[INPT4] | 0x80;  /* not lit */
 
-   lightgun_scanline_cycle = 28 + (CYCLES_PER_SCANLINE - 28) * x / 320;
+#if 0
+   if (!lightgun_enabled)
+      return data;
+#endif
+
+   if (maria_draw)
+      return data;
+
+   //lightgun_y = 45 + maria_visibleArea.top;
+   //lightgun_x = 4 + maria_visibleArea.left;
+
+
+   if (maria_scanline < lightgun_y)
+      return data;
+
+   if (prosystem_cycles < lightgun_x)
+      return data;
+
+   {
+	   extern int lightgun_fire1;
+	   //if (lightgun_fire1 == 0)
+		   //return data;
+   }
+
+   return data & 0x7f;
 }
 
 void lightgun_Run(void)
 {
-   if (!lightgun_enabled)
-      return;
-
-
-   memory_ram[INPT4] |= 0x80;  /* no light */
-
-   if (maria_scanline < lightgun_scanline_start)
-      return;
-
-   if (maria_scanline > lightgun_scanline_end)
-      return;
-
-   if (prosystem_cycles < lightgun_scanline_cycle)
-      return;
-
-   if ((memory_ram[CTRL] & 0x60) == 0x40)  /* avoid dma mode */
-      return;
-
-
-   memory_ram[INPT4] &= 0x7F;
 }
