@@ -221,12 +221,12 @@ static const struct lightgun_db db_list[] =
    {
       "C80155D7EEC9E3DCB79AA6B83C9CCD1E",
       "Meltdown (Europe)",
-      20, -18,
+      16, -18,
    },
    {
       "BEDC30EC43587E0C98FC38C39C1EF9D0",
       "Meltdown (USA)",
-      20, -18,
+      16, -18,
    },
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
@@ -389,6 +389,10 @@ void lightgun_Cursor(int x, int y)
       x = 417 + x - 234;
 
 /*
+441-453 = x
+*/
+
+/*
 0 = 246-261
 */
    else if (x < 262)
@@ -430,6 +434,10 @@ void lightgun_Cursor(int x, int y)
 */
    else if (x < 324)
       x = 31 + x - 300;
+
+/*
+51-192 = x
+*/
 
    lightgun_x = x + lightgun_xadj + maria_visibleArea.left;
    lightgun_y = y + lightgun_yadj + maria_visibleArea.top;
