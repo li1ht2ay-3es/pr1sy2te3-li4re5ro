@@ -266,6 +266,10 @@ void lightgun_Cursor(int x, int y)
       lightgun_Reset();
 
 
+   x = x + (lightgun_xadj) % 324;
+   y = y + lightgun_yadj;
+
+
 /*
 193 = 0-15
 */
@@ -439,8 +443,8 @@ void lightgun_Cursor(int x, int y)
 51-192 = x
 */
 
-   lightgun_x = x + lightgun_xadj + maria_visibleArea.left;
-   lightgun_y = y + lightgun_yadj + maria_visibleArea.top;
+   lightgun_x = x + maria_visibleArea.left;
+   lightgun_y = y + maria_visibleArea.top;
 }
 
 uint8_t lightgun_Strobe(void)
