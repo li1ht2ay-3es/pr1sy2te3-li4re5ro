@@ -191,22 +191,22 @@ static const struct lightgun_db db_list[] =
    {
       "DE3E9496CB7341F865F27E5A72C7F2F5",
       "Alien Brigade (Europe)",
-      0, -14,
+      4, -14,
    },
    {
       "877DCC97A775ED55081864B2DBF5F1E2",
       "Alien Brigade (USA)",
-      0, -14,
+      4, -14,
    },
    {
       "BABE2BC2976688BAFB8B23C192658126",
       "Barnyard Blaster (Europe)",
-      0, -15,
+      16, -19,
    },
    {
       "42682415906C21C6AF80E4198403FFDA",
       "Barnyard Blaster (USA)",
-      0, -15,
+      16, -19,
    },
    {
       "63DB371D67A98DAEC547B2ABD5E7AA95",
@@ -216,27 +216,27 @@ static const struct lightgun_db db_list[] =
    {
       "A94E4560B6AD053A1C24E096F1262EBF",
       "Crossbow (USA)",
-      0, -15, /* ? */
+      0, -15,
    },
    {
       "C80155D7EEC9E3DCB79AA6B83C9CCD1E",
       "Meltdown (Europe)",
-      0, -15,
+      16, -18,
    },
    {
       "BEDC30EC43587E0C98FC38C39C1EF9D0",
       "Meltdown (USA)",
-      0, -15,
+      16, -18,
    },
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
       "Sentinel (Europe)",
-      0, 4,
+      0, -4,
    },
    {
       "B697D9C2D1B9F6CB21041286D1BBFA7F",
       "Sentinel (USA)",
-      0, 4,
+      0, -4,
    },
 };
 
@@ -260,14 +260,11 @@ void lightgun_Reset(void)
    }
 }
 
-#include <stdio.h>
 void lightgun_Cursor(int x, int y)
 {
    if (lightgun_xadj == 0x7fff)
       lightgun_Reset();
 
-
-   printf("%d %d", x, y);
 
 /*
 193 = 0-15
@@ -436,8 +433,6 @@ void lightgun_Cursor(int x, int y)
 
    lightgun_x = x + lightgun_xadj + maria_visibleArea.left;
    lightgun_y = y + lightgun_yadj + maria_visibleArea.top;
-
-   printf(" -- %d %d\n", lightgun_x, lightgun_y);
 }
 
 uint8_t lightgun_Strobe(void)
