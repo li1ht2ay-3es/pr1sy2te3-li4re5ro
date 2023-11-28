@@ -303,7 +303,7 @@ void database_Load(const char *digest)
 
    for (i = 0; i < len; i++)
    {
-      if (!strcmp(db_list[i].digest, digest))
+      if (!strcmpi(db_list[i].digest, digest))
       {
          fixup(i);
          return;

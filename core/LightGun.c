@@ -227,12 +227,12 @@ static const struct lightgun_db db_list[] =
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
       "Sentinel (Europe)",
-      0, 0,
+      0, 1,
    },
    {
       "B697D9C2D1B9F6CB21041286D1BBFA7F",
       "Sentinel (USA)",
-      0, 0,
+      0, 1,
    },
 };
 
@@ -247,7 +247,7 @@ void lightgun_Reset(void)
 
    for (index = 0; index < len; index++)
    {
-      if (!stricmp(db_list[index].digest, cartridge_digest))
+      if (!strcmpi(db_list[index].digest, cartridge_digest))
       {
          lightgun_xadj = db_list[index].xpos;
          lightgun_yadj = db_list[index].ypos;
