@@ -28,7 +28,11 @@
 #include "Maria.h"
 #include "LightGun.h"
 #include "Cartridge.h"
-#include <string.h>
+
+#ifdef WIN32
+  #define strcasecmp stricmp  
+  #define strncasecmp strnicmp
+#endif
 
 int lightgun_enabled;
 
@@ -207,12 +211,12 @@ static const struct lightgun_db db_list[] =
    {
       "63DB371D67A98DAEC547B2ABD5E7AA95",
       "Crossbow (Europe)",
-      0, -14,
+      0, -15,
    },
    {
       "A94E4560B6AD053A1C24E096F1262EBF",
       "Crossbow (USA)",
-      0, -14,
+      0, -15, /* ? */
    },
    {
       "C80155D7EEC9E3DCB79AA6B83C9CCD1E",
@@ -227,12 +231,12 @@ static const struct lightgun_db db_list[] =
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
       "Sentinel (Europe)",
-      0, 1,
+      0, 4,
    },
    {
       "B697D9C2D1B9F6CB21041286D1BBFA7F",
       "Sentinel (USA)",
-      0, 1,
+      0, 4,
    },
 };
 
@@ -247,7 +251,7 @@ void lightgun_Reset(void)
 
    for (index = 0; index < len; index++)
    {
-      if (!strcmpi(db_list[index].digest, cartridge_digest))
+      if (!strcasecmp(db_list[index].digest, cartridge_digest))
       {
          lightgun_xadj = db_list[index].xpos;
          lightgun_yadj = db_list[index].ypos;
@@ -384,7 +388,7 @@ void lightgun_Cursor(int x, int y)
 433 = 240-255
 437 = 242-257
 */
-   else if (x < 258)
+   else if (x < 256)
       x = 417 + x - 234;
 
 /*

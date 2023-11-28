@@ -26,6 +26,11 @@
 #include "Database.h"
 #include "Cartridge.h"
 
+#ifdef WIN32
+  #define strcasecmp stricmp  
+  #define strncasecmp strnicmp
+#endif
+
 #define MAPPER_EXRAM 0x0001  /* 16K ram */
 #define MAPPER_EXRAM_A8 0x0002  /* 2K mirror */
 #define MAPPER_EXRAM_M2 0x0004  /* halt ram */
@@ -303,7 +308,7 @@ void database_Load(const char *digest)
 
    for (i = 0; i < len; i++)
    {
-      if (!strcmpi(db_list[i].digest, digest))
+      if (!strcasecmp(db_list[i].digest, digest))
       {
          fixup(i);
          return;
