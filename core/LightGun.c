@@ -275,7 +275,6 @@ void lightgun_Reset(void)
 
 static int lightgun_calibrate_0(int x)
 {
-	return x;
 /*
 196 = x
 197 = 2
