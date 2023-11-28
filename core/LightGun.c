@@ -201,12 +201,12 @@ static const struct lightgun_db db_list[] =
    {
       "BABE2BC2976688BAFB8B23C192658126",
       "Barnyard Blaster (Europe)",
-      13, -17,
+      16, -14,
    },
    {
       "42682415906C21C6AF80E4198403FFDA",
       "Barnyard Blaster (USA)",
-      13, -17,
+      16, -14,
    },
    {
       "63DB371D67A98DAEC547B2ABD5E7AA95",
@@ -231,12 +231,12 @@ static const struct lightgun_db db_list[] =
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
       "Sentinel (Europe)",
-      0, -4,
+      0, -2,
    },
    {
       "B697D9C2D1B9F6CB21041286D1BBFA7F",
       "Sentinel (USA)",
-      0, -4,
+      0, -2,
    },
 };
 
