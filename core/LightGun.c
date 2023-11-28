@@ -206,13 +206,13 @@ static const struct lightgun_db db_list[] =
       "BABE2BC2976688BAFB8B23C192658126",
       "Barnyard Blaster (Europe)",
       0,
-      0, -14,
+      3, -14,
    },
    {
       "42682415906C21C6AF80E4198403FFDA",
       "Barnyard Blaster (USA)",
       0,
-      0, -14,
+      3, -14,
    },
    {
       "63DB371D67A98DAEC547B2ABD5E7AA95",
