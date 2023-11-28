@@ -230,13 +230,13 @@ static const struct lightgun_db db_list[] =
       "C80155D7EEC9E3DCB79AA6B83C9CCD1E",
       "Meltdown (Europe)",
       0,
-      -2, -18,
+      0, -16,
    },
    {
       "BEDC30EC43587E0C98FC38C39C1EF9D0",
       "Meltdown (USA)",
       0,
-      -2, -18,
+      0, -16,
    },
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
