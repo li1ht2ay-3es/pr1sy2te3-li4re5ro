@@ -28,6 +28,7 @@
 #include "Maria.h"
 #include "LightGun.h"
 #include "Cartridge.h"
+#include <string.h>
 
 int lightgun_enabled;
 
