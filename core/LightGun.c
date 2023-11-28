@@ -41,6 +41,7 @@ static int lightgun_y;
 
 static int lightgun_xadj = 0x7fff;
 static int lightgun_yadj;
+static int lightgun_calibrate = 0;
 
 /*
 300 = 100
@@ -182,6 +183,7 @@ typedef struct lightgun_db
 {
    char digest[256];
    char title[256];
+   int calibration;
    int xpos;
    int ypos;
 } lightgun_db_t;
@@ -191,51 +193,61 @@ static const struct lightgun_db db_list[] =
    {
       "DE3E9496CB7341F865F27E5A72C7F2F5",
       "Alien Brigade (Europe)",
+      1,
       4, -14,
    },
    {
       "877DCC97A775ED55081864B2DBF5F1E2",
       "Alien Brigade (USA)",
+      1,
       4, -14,
    },
    {
       "BABE2BC2976688BAFB8B23C192658126",
       "Barnyard Blaster (Europe)",
+      0,
       16, -14,
    },
    {
       "42682415906C21C6AF80E4198403FFDA",
       "Barnyard Blaster (USA)",
+      0,
       16, -14,
    },
    {
       "63DB371D67A98DAEC547B2ABD5E7AA95",
       "Crossbow (Europe)",
+      1,
       0, -15,
    },
    {
       "A94E4560B6AD053A1C24E096F1262EBF",
       "Crossbow (USA)",
+      1,
       0, -15,
    },
    {
       "C80155D7EEC9E3DCB79AA6B83C9CCD1E",
       "Meltdown (Europe)",
-      16, -18,
+      0,
+      0, -18,
    },
    {
       "BEDC30EC43587E0C98FC38C39C1EF9D0",
       "Meltdown (USA)",
-      16, -18,
+      0,
+      0, -18,
    },
    {
       "5469B4DE0608F23A5C4F98F331C9E75F",
       "Sentinel (Europe)",
+      1,
       0, -2,
    },
    {
       "B697D9C2D1B9F6CB21041286D1BBFA7F",
       "Sentinel (USA)",
+      1,
       0, -2,
    },
 };
@@ -255,21 +267,176 @@ void lightgun_Reset(void)
       {
          lightgun_xadj = db_list[index].xpos;
          lightgun_yadj = db_list[index].ypos;
+         lightgun_calibrate = db_list[index].calibration;
          break;
       }
    }
 }
 
-void lightgun_Cursor(int x, int y)
+static int lightgun_calibrate_0(int x)
 {
-   if (lightgun_xadj == 0x7fff)
-      lightgun_Reset();
+	return x;
+/*
+196 = x
+197 = 2
+203 = 4
+207 = 6
+211 = 8
+215 = 10
+*/
+   if (x < 16)
+      x = 199 + x - 0;
 
+/*
+219 = 20
+223 = 22
 
-   x = x + (lightgun_xadj) % 324;
-   y = y + lightgun_yadj;
+227 = 26
+231 = 28
+235 = 30
+239 = 32
+*/
+   else if (x < 40)
+      x = 219 + x - 16;
 
+/*
+243 = 46
+247 = 48
+251 = 50
+255 = 52
+259 = 54
+*/
+   else if (x < 60)
+      x = 243 + x - 40;
 
+/*
+263 = 66
+267 = 68
+
+271 = 72
+275 = 74
+279 = 76
+283 = 78
+*/
+   else if (x < 86)
+      x = 263 + x - 66;
+
+/*
+287 = 92
+291 = 94
+
+295 = 98
+299 = 100
+303 = 102
+*/
+   else if (x < 106)
+      x = 287 + x - 92;
+
+/*
+307 = 112
+311 = 114
+
+315 = 118
+319 = 120
+323 = 122
+327 = 124
+331 = 126
+*/
+   else if (x < 134)
+      x = 307 + x - 112;
+
+/*
+335 = 142
+339 = 144
+343 = 146
+347 = 148
+*/
+   else if (x < 148)
+      x = 335 + x - 142;
+
+/*
+351 = 158
+355 = 160
+
+359 = 164
+363 = 166
+367 = 168
+371 = 170
+*/
+   else if (x < 180)
+      x = 351 + x - 158;
+
+/*
+375 = 184
+379 = 186
+
+383 = 190
+387 = 192
+391 = 194
+*/
+   else if (x < 204)
+      x = 375 + x - 184;
+
+/*
+395 = 204
+399 = 206
+
+403 = 210
+407 = 212
+411 = 214
+415 = 216
+*/
+   else if (x < 230)
+      x = 395 + x - 204;
+
+/*
+419 = 230
+423 = 232
+
+427 = 236
+431 = 238
+435 = 240
+*/
+   else if (x < 242)
+      x = 419 + x - 230;
+
+/*
+439 = x
+0 = 242
+*/
+   else if (x < 262)
+      x = 1;
+
+/*
+3 = 262
+7 = 268
+11 = 270
+15 = 274
+
+19 = 280
+23 = 284
+27 = 286
+*/
+   else if (x < 290)
+      x = 3 + x - 262;
+
+/*
+31 = 300
+35 = 302
+39 = 304
+43 = 306
+47 = 308
+
+51 = x
+*/
+   else if (x < 320)
+      x = 31 + x - 300;
+
+   return x;
+}
+
+static int lightgun_calibrate_1(int x)
+{
 /*
 193 = 0-15
 */
@@ -442,6 +609,23 @@ void lightgun_Cursor(int x, int y)
 /*
 51-192 = x
 */
+
+   return x;
+}
+
+void lightgun_Cursor(int x, int y)
+{
+   if (lightgun_xadj == 0x7fff)
+      lightgun_Reset();
+
+
+   x = x + lightgun_xadj;
+   y = y + lightgun_yadj;
+
+   if (lightgun_calibrate == 1)
+      x = lightgun_calibrate_1(x);
+   else
+      x = lightgun_calibrate_0(x);
 
    lightgun_x = x + maria_visibleArea.left;
    lightgun_y = y + maria_visibleArea.top;
