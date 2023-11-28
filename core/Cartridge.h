@@ -61,6 +61,7 @@ extern bool cartridge_IsLoaded(void);
 extern void cartridge_Release(bool persistent_data);
 
 extern void cartridge_Reset(void);
+extern void cartridge_Frame(void);
 extern void cartridge_Map(void);
 extern void cartridge_MapBios(void);
 

@@ -81,13 +81,9 @@ void prosystem_Reset()
    maria_Reset();
    memory_Reset();
    riot_Reset();
-   lightgun_Reset();
 
    mixer_Reset();
    tia_Reset();
-   pokey_Reset();
-   bupchip_Reset();
-   ym2151_Reset();
 
    cartridge_Reset();
    prosystem_Map();
@@ -126,17 +122,13 @@ void prosystem_ExecuteFrame(const uint8_t* input)
 
    mixer_Frame();
    tia_Frame();
-   pokey_Frame();
-   bupchip_Frame();
-   ym2151_Frame();
+   cartridge_Frame();
 
 
    maria_scanline = maria_displayArea.bottom + 1;  /* vblank start */
    scanline_start = maria_scanline;
 
-
-   if (!lightgun_enabled)
-      riot_SetInput(input);
+   riot_SetInput(input);
 
 
    while (1)
@@ -149,9 +141,6 @@ void prosystem_ExecuteFrame(const uint8_t* input)
       {
          maria_Scanline();
          pokey_Scanline();
-
-         if (lightgun_enabled && maria_scanline == 0)
-            riot_SetInput(input);
 	  }
 
 

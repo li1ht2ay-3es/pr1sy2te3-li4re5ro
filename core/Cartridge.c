@@ -32,6 +32,7 @@
 #include "Mapper.h"
 #include "Database.h"
 #include "Ym2151.h"
+#include "LightGun.h"
 #include <streams/file_stream.h>
 
 char cartridge_digest[33];
@@ -358,6 +359,31 @@ bool cartridge_Load(bool persistent_data, const uint8_t* data, uint32_t size)
 void cartridge_Reset(void)
 {
    mapper_Reset();
+
+
+   if (cartridge_pokey)
+      pokey_Reset();
+
+   if (cartridge_bupchip)
+      bupchip_Reset();
+
+   if (cartridge_ym2151)
+      ym2151_Reset();
+
+   if (lightgun_enabled)
+      lightgun_Reset();
+}
+
+void cartridge_Frame(void)
+{
+   if (cartridge_pokey)
+      pokey_Frame();
+
+   if (cartridge_bupchip)
+      bupchip_Frame();
+
+   if (cartridge_ym2151)
+      ym2151_Frame();
 }
 
 void cartridge_MapBios(void)

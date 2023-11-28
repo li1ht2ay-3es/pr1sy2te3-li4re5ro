@@ -194,13 +194,16 @@ static void display_ResetPalette(void)
 static void draw_lightgun_cursor(int16_t x, int16_t y, uint8_t color)
 {
    int ypos, xpos;
-   int x_start = x - LIGHTGUN_PAD;  /* pixel center */
-   int x_end  = x + LIGHTGUN_PAD;
-   int y_start = y - LIGHTGUN_PAD;
-   int y_end = y + LIGHTGUN_PAD;
+   int x_start = x - 2;  /* pixel center */
+   int x_end  = x + 2;
+   int y_start = y - 2;
+   int y_end = y + 2;
 
    uint8_t *ptr = maria_surface + (maria_visibleArea.top - maria_displayArea.top) * Rect_GetLength(&maria_visibleArea);
    ptr += maria_visibleArea.left - maria_displayArea.left;
+
+   if ((x == 0x7fff) | (y == 0x7fff))
+      return;
 
    for (ypos = y_start; ypos <= y_end; ypos++)  /* draw crosshair */
    {
@@ -246,28 +249,16 @@ static void process_lightgun(int port)
    }
 
 
-   lightgun_Trigger(x, y);
-
    if (btn)
-   {
-      if (++lightgun_trigger >= 4)  /* wait for minimum hold time */
-	  {
-         lightgun_trigger = 1;
-      }
-   }
-
-   else if (lightgun_trigger >= 4 && lightgun_trigger <= 8)  /* hold fire */
-   {
-      lightgun_Trigger(lightgun_x, lightgun_y);
       lightgun_trigger++;
-   }
-
    else
       lightgun_trigger = 0;
 
 
    lightgun_x = x;
    lightgun_y = y;
+
+   lightgun_Cursor(x, y);
 }
 
 static void update_input(void)
@@ -397,7 +388,7 @@ static void update_input(void)
          process_lightgun(port);
 
          lightgun_enabled = 1;
-         keyboard_data[3] = lightgun_trigger ? 0 : 1;  /* inverted */
+         keyboard_data[3] = (lightgun_trigger >= 4) ? 0 : 1;  /* inverted */
 		 break;
 	  }
    }
