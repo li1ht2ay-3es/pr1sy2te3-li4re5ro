@@ -892,7 +892,7 @@ static uint32_t sally_ExecuteInstruction(void)
       sally_opcode = 0;
    if (sally_pc.w == 0xb8a4)
       sally_opcode = 0;
-   if (sally_pc.w == 0xb8a6)
+   if (sally_pc.w == 0xb8a6)5
       sally_opcode = 0;
    if (sally_pc.w == 0xb8e6)
       sally_opcode = 0;

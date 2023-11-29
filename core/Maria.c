@@ -88,10 +88,6 @@ void maria_Write(uint16_t address, uint8_t data)
 {
    switch (address)
    {
-   case CTRL:
-      memory_ram[address] = data;
-      break;
-
    case MSTAT:
       break;
 

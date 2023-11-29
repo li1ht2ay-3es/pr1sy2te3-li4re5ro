@@ -197,7 +197,7 @@ uint8_t tia_Read(uint16_t address)
       return memory_ram[address];
 
    case INPT4:
-      //if (lightgun_enabled)
+      if (lightgun_enabled)
          return lightgun_Strobe();
 
       return memory_ram[INPT4];

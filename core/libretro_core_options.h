@@ -98,7 +98,7 @@ struct retro_core_option_definition option_defs_us[] = {
    },
    {
       "prosystem_tia_lowpass",
-      "TIA Audio Filter",
+      "TIA Audio Lowpass Cutoff",
       "Remove higher frequency sounds.",
       {
          { "4", "8 KHz" },
@@ -111,7 +111,7 @@ struct retro_core_option_definition option_defs_us[] = {
    },
    {
       "prosystem_pokey_lowpass",
-      "POKEY Audio Filter",
+      "POKEY Audio Lowpass Cutoff",
       "Remove higher frequency sounds.",
       {
          { "224", "8 KHz" },
@@ -147,7 +147,7 @@ struct retro_core_option_definition option_defs_us[] = {
    },
    {
       "prosystem_low_pass_range",
-      "Audio Filter Level (TIA)",
+      "TIA Audio Filter",
       "Specifies the cut-off frequency of the low pass audio filter. A higher value increases the perceived 'strength' of the filter, since a wider range of the high frequency spectrum is attenuated.",
       {
          { "0",  "0%" },
@@ -177,7 +177,7 @@ struct retro_core_option_definition option_defs_us[] = {
    },
    {
       "prosystem_low_pass_range_mixer",
-      "Audio Filter Level (Mixer)",
+      "Mixer Audio Filter Level",
       "Specifies the cut-off frequency of the low pass audio filter. A higher value increases the perceived 'strength' of the filter, since a wider range of the high frequency spectrum is attenuated.",
       {
          { "0",  "0%" },
