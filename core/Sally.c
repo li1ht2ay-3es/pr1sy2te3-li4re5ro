@@ -96,6 +96,11 @@ static uint8_t read_mem(uint16_t address)
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
 
+#if 0
+   if (address >= 0x1008 && address < 0x1800)
+	   address += 0;
+#endif
+
    if (sally_readmap[bank] > 0)
       return sally_readmap[bank][offset];
 
@@ -113,8 +118,10 @@ static void write_mem(uint16_t address, uint8_t data)
    uint16_t bank = address / 0x40;
    uint16_t offset = address % 0x40;
 
-   if (address >= 0x1790 && address < 0x17a0)
+#if 0
+   if (address >= 0x1008 && address < 0x1800)
 	   address += 0;
+#endif
 
    if (sally_writemap[bank] > 0)
       sally_writemap[bank][offset] = data;
@@ -872,6 +879,28 @@ static uint32_t sally_ExecuteIRQ(void)
 
 static uint32_t sally_ExecuteInstruction(void)
 {
+#if 0
+   static int last_pc;
+
+   if (sally_pc.w >= 0x3000 && sally_pc.w < 0x4000)
+      sally_opcode = 0;
+   if (sally_pc.w == 0xb503)
+      sally_opcode = 0;
+   if (sally_pc.w == 0x4d84)
+      sally_opcode = 0;
+   if (sally_pc.w == 0x4d99)
+      sally_opcode = 0;
+   if (sally_pc.w == 0xb8a4)
+      sally_opcode = 0;
+   if (sally_pc.w == 0xb8a6)
+      sally_opcode = 0;
+   if (sally_pc.w == 0xb8e6)
+      sally_opcode = 0;
+   if (sally_pc.w == 0xe25c)
+      sally_opcode = 0;
+   last_pc = sally_pc.w;
+#endif
+
    sally_opcode = read_mem(sally_pc.w++);
    sally_cycles = SALLY_CYCLES[sally_opcode];
 
