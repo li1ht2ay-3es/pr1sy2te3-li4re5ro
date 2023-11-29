@@ -134,12 +134,11 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port_2[] = {
       { "None", RETRO_DEVICE_NONE },
       { "Joypad", RETRO_DEVICE_JOYPAD },
-      { "Lightgun", RETRO_DEVICE_LIGHTGUN },
    };
 
    static const struct retro_controller_info ports[] = {
       { port_1, 3 },
-      { port_2, 3 },
+      { port_2, 2 },
    };
 
    environ_cb = cb;
