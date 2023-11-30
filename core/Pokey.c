@@ -437,11 +437,13 @@ void pokey_Run(int cycles)
 
          poly_ticks++;
 
-         if (hiclk1)
+
+         if (hiclk1 && (joined12 || pokey_audf[0] > 0))  /* ultrasonic speed hack */
 	        inc_channel(0, joined12 ? 7 : 4);
 
-         if (hiclk3)
+         if (hiclk3 && (joined34 || pokey_audf[2] > 0))
 	        inc_channel(2, joined34 ? 7 : 4);
+
 
          if (clock_triggered)
 		 {
