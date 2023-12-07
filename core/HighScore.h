@@ -35,6 +35,7 @@ extern "C" {
 
 extern bool highscore_Load(const char *filename);
 extern void highscore_Release(void);
+extern bool highscore_IsValid(void);
 
 extern bool highscore_ReadNvram(const char *filename);
 extern bool highscore_ReadNvramName(const char *filename, char *buffer);

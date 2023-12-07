@@ -52,8 +52,18 @@ static void highscore_initram(void)
    memset(memory_nvram + 0xf8, 0x7f, 0x13d - 0xf8);  /* index */
    memset(memory_nvram + 0x13d, 0, 0x780 - 0x13d);  /* data */   
    memset(memory_nvram + 0x790, 0, 0x7a0 - 0x790);  /* data */   
-   //memset(memory_nvram + 0x790, 0xff, 0x7a0 - 0x790);  /* data */  /* (Popeye ?) */
    memset(memory_nvram + 0x7a0, 0, 0x800 - 0x7a0);  /* data */   
+}
+
+bool highscore_IsValid(void)
+{
+   if (memory_nvram[2] != 0x68) return false;
+   if (memory_nvram[3] != 0x83) return false;
+   if (memory_nvram[4] != 0xaa) return false;
+   if (memory_nvram[5] != 0x55) return false;
+   if (memory_nvram[6] != 0x9c) return false;
+
+   return true;
 }
 
 bool highscore_Load(const char *filename)

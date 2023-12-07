@@ -266,7 +266,7 @@ static void fixup(int index)
       cartridge_pokey = POKEY_AT_4000;
 
    if (flags & AUDIO_YM2151_460)
-      cartridge_pokey = YM2151_AT_460;
+      cartridge_ym2151 = YM2151_AT_460;
 
    if (flags & AUDIO_BUPCHIP)
       cartridge_bupchip = 1;

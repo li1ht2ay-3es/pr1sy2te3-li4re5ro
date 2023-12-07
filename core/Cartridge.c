@@ -48,6 +48,7 @@ uint8_t cartridge_pokey;
 uint8_t cartridge_ym2151;
 uint8_t cartridge_bupchip;
 uint8_t cartridge_xm;
+uint8_t cartridge_atarivox;
 
 uint8_t cartridge_bankset;
 uint8_t cartridge_exrom;

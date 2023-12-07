@@ -856,7 +856,12 @@ bool retro_load_game(const struct retro_game_info *info)
       sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 BIOS (U).rom");
    
    if (bios_Load(biospath))
+   {
       bios_enabled = true;
+
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "[ProSystem]: System BIOS loaded\n");
+   }
 
    /* High Score Cart is optional */
    if (cartridge_region == REGION_PAL)
@@ -866,15 +871,78 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (highscore_Load(biospath))
    {
-      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
-      highscore_ReadNvram(biospath);  /* per core overwrites later */
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "[ProSystem]: High Score Cart loaded\n");
 
-      memcpy(highscore_globalname, memory_nvram + 8, 33);
+      sprintf(biospath, "%s%c%s", system_directory_c, slash, "7800 Highscore.sav");
+
+      if (highscore_ReadNvram(biospath))  /* per core overwrites later */
+	  {
+         if (log_cb)
+            log_cb(RETRO_LOG_INFO, "[ProSystem]: High Score file found\n");
+
+         memcpy(highscore_globalname, memory_nvram + 8, 33);
+	  }
    }
 
    retro_reset();
 
    display_ResetPalette();
+
+   if (log_cb)
+   {
+      log_cb(RETRO_LOG_INFO, "[ProSystem]: Cartridge info\n");
+
+      switch (cartridge_type)
+	  {
+      case CARTRIDGE_TYPE_LINEAR: log_cb(RETRO_LOG_INFO, "- Mapper = Linear\n"); break;
+      case CARTRIDGE_TYPE_SUPERGAME: log_cb(RETRO_LOG_INFO, "- Mapper = SuperGame\n"); break;
+      case CARTRIDGE_TYPE_ACTIVISION: log_cb(RETRO_LOG_INFO, "- Mapper = Activision\n"); break;
+      case CARTRIDGE_TYPE_ABSOLUTE: log_cb(RETRO_LOG_INFO, "- Mapper = Absolute\n"); break;
+      case CARTRIDGE_TYPE_SOUPER: log_cb(RETRO_LOG_INFO, "- Mapper = Souper\n"); break;
+      }
+
+      if (cartridge_exram)
+         log_cb(RETRO_LOG_INFO, "- Exram = 16 KB @ 4000\n");
+
+      if (cartridge_exram_a8)
+         log_cb(RETRO_LOG_INFO, "- Exram = 2 KB @ 4000, Mirrored @ A8\n");
+
+      if (cartridge_exram_x2)
+         log_cb(RETRO_LOG_INFO, "- Paging RAM @ 4000, Not supported\n");
+
+      if (cartridge_exrom)
+         log_cb(RETRO_LOG_INFO, "- Exrom = 16 KB @ 4000\n");
+
+      if (cartridge_exfix)
+         log_cb(RETRO_LOG_INFO, "- Exfix = bank6 @ 4000\n");
+
+      if (cartridge_bankset)
+         log_cb(RETRO_LOG_INFO, "- Bankset ROM\n");
+
+      if (cartridge_exram_m2)
+         log_cb(RETRO_LOG_INFO, "- Bankset RAM\n");
+
+      switch (cartridge_pokey)
+	  {
+	  case POKEY_AT_4000: log_cb(RETRO_LOG_INFO, "- Audio = POKEY @ 4000\n"); break;
+	  case POKEY_AT_450: log_cb(RETRO_LOG_INFO, "- Audio = POKEY @ 450\n"); break;
+	  case POKEY_AT_440: log_cb(RETRO_LOG_INFO, "- Audio = POKEY @ 440\n"); break;
+	  case POKEY_AT_800: log_cb(RETRO_LOG_INFO, "- Audio = POKEY @ 800\n"); break;
+	  }
+
+      if (cartridge_ym2151)
+         log_cb(RETRO_LOG_INFO, "- Audio = YM2151 @ 460\n");
+
+      if (cartridge_bupchip)
+         log_cb(RETRO_LOG_INFO, "- Audio = Bupchip\n");
+
+      if (cartridge_region == 1)
+         log_cb(RETRO_LOG_INFO, "- Region = PAL\n");
+	  else
+         log_cb(RETRO_LOG_INFO, "- Region = NTSC\n");
+   }
+
    return true;
 }
 
@@ -908,7 +976,7 @@ void retro_unload_game(void)
          highscore_WriteNvram(biospath);
 
 	  else if (highscore_name == 1)  /* global */
-         highscore_WriteNvramName(biospath, highscore_globalname);
+         highscore_WriteNvramName(biospath, memory_nvram + 8);
    }
 
    persistent_data = false;
